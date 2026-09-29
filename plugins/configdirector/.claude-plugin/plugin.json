@@ -1,7 +1,7 @@
 {
   "name": "configdirector",
   "displayName": "ConfigDirector",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Manage ConfigDirector feature flags, remote configs, and targeting rules from Claude Code, and add ConfigDirector to a project with the setup skill.",
   "author": {
     "name": "ConfigDirector",
@@ -10,7 +10,15 @@
   "homepage": "https://docs.configdirector.com/integrations/mcp",
   "repository": "https://github.com/ConfigDirector/claude-plugins",
   "license": "MIT",
-  "keywords": ["feature-flags", "remote-config", "openfeature", "mcp"],
+  "icon": "./.claude-plugin/icon.png",
+  "privacyPolicyUrl": "https://www.configdirector.com/privacy",
+  "termsOfServiceUrl": "https://www.configdirector.com/terms",
+  "keywords": [
+    "feature-flags",
+    "remote-config",
+    "openfeature",
+    "mcp"
+  ],
   "userConfig": {
     "api_token": {
       "type": "string",
