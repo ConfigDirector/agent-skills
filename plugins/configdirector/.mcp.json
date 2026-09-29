@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "configdirector": {
+      "type": "http",
+      "url": "https://mcp.configdirector.com",
+      "headers": {
+        "Authorization": "Bearer ${user_config.api_token}"
+      }
+    }
+  }
+}

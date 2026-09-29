@@ -1,0 +1,17 @@
+{
+  "name": "configdirector",
+  "description": "Claude Code plugins for ConfigDirector, managed feature flags and remote configuration.",
+  "owner": {
+    "name": "ConfigDirector",
+    "url": "https://www.configdirector.com"
+  },
+  "plugins": [
+    {
+      "name": "configdirector",
+      "source": "./plugins/configdirector",
+      "description": "Manage ConfigDirector feature flags, remote configs, and targeting rules from Claude Code, and add ConfigDirector to a project with the setup skill.",
+      "category": "development",
+      "keywords": ["feature-flags", "remote-config", "openfeature", "mcp"]
+    }
+  ]
+}
