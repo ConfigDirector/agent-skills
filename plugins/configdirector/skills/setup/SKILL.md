@@ -26,6 +26,7 @@ Look at the manifest files in the project (and in each app of a monorepo) and pi
 | JVM server (Gradle or Maven, Java or Kotlin, no Android plugin)              | Java                | https://docs.configdirector.com/sdks/server/java             |
 | `.csproj` or `.sln`                                                          | .NET                | https://docs.configdirector.com/sdks/server/dotnet           |
 | `pyproject.toml`, `requirements.txt`, or `setup.py`                          | Python              | https://docs.configdirector.com/sdks/server/python           |
+| `go.mod`                                                                     | Go                  | https://docs.configdirector.com/sdks/server/go               |
 | OpenFeature web app                                                          | OpenFeature Web     | https://docs.configdirector.com/sdks/openfeature/web         |
 | OpenFeature Node.js server                                                   | OpenFeature Node.js | https://docs.configdirector.com/sdks/openfeature/node-js     |
 | OpenFeature Swift app                                                        | OpenFeature Swift   | https://docs.configdirector.com/sdks/openfeature/swift       |
@@ -34,6 +35,7 @@ Look at the manifest files in the project (and in each app of a monorepo) and pi
 | OpenFeature Python server                                                    | OpenFeature Python  | https://docs.configdirector.com/sdks/openfeature/python      |
 | OpenFeature Java server                                                      | OpenFeature Java    | https://docs.configdirector.com/sdks/openfeature/java        |
 | OpenFeature .NET server                                                      | OpenFeature .NET    | https://docs.configdirector.com/sdks/openfeature/dotnet      |
+| OpenFeature Go server                                                        | OpenFeature Go      | https://docs.configdirector.com/sdks/openfeature/go          |
 
 The more specific row wins: a Next.js app also depends on `react`, and it gets the Next.js SDK. If the project has several apps, ask which one to set up. If nothing matches, tell the user which SDKs exist (https://docs.configdirector.com/sdks/available-sdks) and stop.
 

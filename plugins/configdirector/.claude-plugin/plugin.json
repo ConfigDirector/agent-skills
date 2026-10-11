@@ -1,7 +1,7 @@
 {
   "name": "configdirector",
   "displayName": "ConfigDirector",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Manage ConfigDirector feature flags, remote configs, and targeting rules from Claude Code, and add ConfigDirector to a project with the setup skill.",
   "author": {
     "name": "ConfigDirector",
