@@ -1,11 +1,17 @@
 ---
-name: setup
+name: configdirector-setup
 description: Add ConfigDirector feature flags and remote config to the current project. Detects the framework, installs the matching ConfigDirector SDK or OpenFeature provider, wires it up with the SDK key from an environment variable, and evaluates a first feature flag. Use when the user asks to add ConfigDirector, feature flags, or remote config to their app.
+license: MIT
+metadata:
+  author: ConfigDirector
+  version: 0.1.0
 ---
 
 # Add ConfigDirector to this project
 
 Work through the steps in order. Confirm with the user before installing packages, before creating anything in their ConfigDirector account, and whenever the project gives more than one plausible answer.
+
+Creating the first flag needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Configs: Read`, `Configs: Create`.
 
 ## 1. Find the app and its SDK
 
@@ -56,7 +62,7 @@ Fetch the docs page from the table and follow it for the install command, the in
 
 ## 4. Create the first flag
 
-This step uses the ConfigDirector MCP tools from this plugin (`list_projects`, `list_configs`, `create_config`). If none of them are available, the plugin's API token is probably not set: tell the user to run `/plugin`, open **Installed**, select **ConfigDirector**, choose **Configure options**, and enter an API token from **API Tokens** in the ConfigDirector dashboard, then run `/reload-plugins`. If the tools are available but `create_config` is not among them, the token lacks the `Configs: Create` permission. In either case, continue with the fallback at the end of this step.
+Use the ConfigDirector MCP tools (`list_projects`, `list_configs`, `create_config`) when the ConfigDirector MCP server is connected. If no ConfigDirector tool is available, tell the user to connect the MCP server for their agent, following https://docs.configdirector.com/integrations/mcp, with an API token that has the permissions above, including `Configs: Create`. If the tools are available but `create_config` is not among them, the token lacks the `Configs: Create` permission. In either case, continue with the fallback at the end of this step.
 
 1. Call `list_projects`. If there is more than one project, ask which one this app belongs to.
 2. Ask what the first flag should control, and propose a key in kebab case, for example `new-checkout-page`. Call `list_configs` to make sure the key is not already used.
