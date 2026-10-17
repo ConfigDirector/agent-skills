@@ -5,7 +5,7 @@
     {
       "title": "Developer",
       "description": "Skills for adding ConfigDirector to a project and working with feature flags and configs in its code.",
-      "skills": ["configdirector-setup"]
+      "skills": ["configdirector-setup", "configdirector-connect"]
     }
   ]
 }

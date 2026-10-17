@@ -2,9 +2,10 @@
 
 Agent skills for [ConfigDirector](https://www.configdirector.com), a managed service for feature flags and remote configuration. An agent skill is a set of instructions your coding agent loads to carry out one ConfigDirector task, so it works with ConfigDirector the way someone who has read the docs would. Ask your agent to add ConfigDirector or feature flags to your project, and it picks up the matching skill on its own.
 
-| Skill                  | What it does                                                                                                                                                                                                                       | API token permissions                                |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `configdirector-setup` | Adds ConfigDirector to the current project: picks the SDK for your framework, installs it, reads the SDK key from an environment variable, creates a first feature flag after you confirm it, and evaluates the flag in your code. | `Projects: Read`, `Configs: Read`, `Configs: Create` |
+| Skill                    | What it does                                                                                                                                                                                                                                                   | API token permissions                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `configdirector-setup`   | Adds ConfigDirector to the current project: picks the SDK for your framework, installs it, reads the SDK key from an environment variable, creates a first feature flag after you confirm it, and evaluates the flag in your code.                             | `Projects: Read`, `Configs: Read`, `Configs: Create`            |
+| `configdirector-connect` | Sets up your agent's access to ConfigDirector, through the MCP server or the CLI, and checks it with one read. Asks what the agent will do and names the permissions for it; you create the token and set it where the agent runs, so the agent never sees it. | `Projects: Read`, plus the permissions you choose for the agent |
 
 ## Install
 
@@ -20,13 +21,15 @@ Add `--skill configdirector-setup` to install only that skill, and `-g` to insta
 
 ## Connect your agent to ConfigDirector
 
-The skills reach your ConfigDirector account through the ConfigDirector MCP server. Create an API token in the ConfigDirector dashboard under **API tokens**, with the permissions in the table above, and set up the server for your agent as the [MCP docs page](https://docs.configdirector.com/integrations/mcp) shows. Keep the token in an environment variable or your editor's secret storage, as that page explains, and never paste it into the chat.
+The skills reach your ConfigDirector account through the ConfigDirector MCP server or the ConfigDirector CLI. Ask your agent to connect ConfigDirector, and the `configdirector-connect` skill walks you through it: it names the permissions for what you want the agent to do, you create an API token with them in the ConfigDirector dashboard under **API tokens**, and the agent writes the MCP configuration with the token referenced from an environment variable, or walks you through the CLI sign-in, then checks the access with one read. The agent never sees the token, so never paste it into the chat.
+
+To set it up by hand instead, follow the [MCP docs page](https://docs.configdirector.com/integrations/mcp) or the [CLI docs page](https://docs.configdirector.com/integrations/cli).
 
 Without the MCP server, `configdirector-setup` still adds the SDK to your project, and asks you to create the first flag in the dashboard.
 
 ## If you used the Claude Code plugin
 
-This repository was `ConfigDirector/claude-plugins`, the ConfigDirector plugin for Claude Code. The plugin is no longer published, and these skills replace its setup skill. The plugin also connected Claude Code to the ConfigDirector MCP server, which the skills do not do: once you remove the plugin, set the server up from the [MCP docs page](https://docs.configdirector.com/integrations/mcp).
+This repository was `ConfigDirector/claude-plugins`, the ConfigDirector plugin for Claude Code. The plugin is no longer published, and these skills replace its setup skill. The plugin also connected Claude Code to the ConfigDirector MCP server, which the skills do not do: once you remove the plugin, ask your agent to connect ConfigDirector, or set the server up from the [MCP docs page](https://docs.configdirector.com/integrations/mcp).
 
 ## License
 

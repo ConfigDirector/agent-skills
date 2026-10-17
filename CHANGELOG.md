@@ -4,6 +4,14 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Added
+
+- The `configdirector-connect` skill. It sets up your coding agent's access to ConfigDirector, through the ConfigDirector MCP server when your agent supports MCP servers and through the ConfigDirector CLI otherwise, and checks it with one read. It asks what the agent will do and names the API token permissions for it; you create the token and set it where the agent runs, so the token never passes through the agent.
+
+### Changed
+
+- `configdirector-setup` sends you to `configdirector-connect` when it finds no ConfigDirector tools, instead of to the MCP docs page.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added

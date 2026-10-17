@@ -62,7 +62,7 @@ Fetch the docs page from the table and follow it for the install command, the in
 
 ## 4. Create the first flag
 
-Use the ConfigDirector MCP tools (`list_projects`, `list_configs`, `create_config`) when the ConfigDirector MCP server is connected. If no ConfigDirector tool is available, tell the user to connect the MCP server for their agent, following https://docs.configdirector.com/integrations/mcp, with an API token that has the permissions above, including `Configs: Create`. If the tools are available but `create_config` is not among them, the token lacks the `Configs: Create` permission. In either case, continue with the fallback at the end of this step.
+Use the ConfigDirector MCP tools (`list_projects`, `list_configs`, `create_config`) when the ConfigDirector MCP server is connected. If no ConfigDirector tool is available, tell the user to run the `configdirector-connect` skill to set up the agent's access with an API token that has the permissions above; then continue with the fallback at the end of this step for this run. If the tools are available but `create_config` is not among them, the token lacks the `Configs: Create` permission; continue with the fallback as well.
 
 1. Call `list_projects`. If there is more than one project, ask which one this app belongs to.
 2. Ask what the first flag should control, and propose a key in kebab case, for example `new-checkout-page`. Call `list_configs` to make sure the key is not already used.
