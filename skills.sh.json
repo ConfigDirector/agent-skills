@@ -5,7 +5,12 @@
     {
       "title": "Developer",
       "description": "Skills for adding ConfigDirector to a project and working with feature flags and configs in its code.",
-      "skills": ["configdirector-setup", "configdirector-connect"]
+      "skills": [
+        "configdirector-setup",
+        "configdirector-connect",
+        "configdirector-use-configs-in-code",
+        "configdirector-test-with-flags"
+      ]
     }
   ]
 }
