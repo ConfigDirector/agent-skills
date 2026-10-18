@@ -4,7 +4,7 @@ description: Wrap a code change in a new temporary ConfigDirector feature flag t
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.4.0
+  version: 0.5.0
 ---
 
 # Wrap a change in a feature flag
@@ -53,7 +53,7 @@ Follow `configdirector-use-configs-in-code` for the call: it finds the SDK's doc
 
 1. Evaluate the flag once, where the new code and the current behavior part ways, through the client the project already has. Write the key as a string literal or a constant assigned once; when the tests of item 4 give the key to the test client, use one constant for both.
 2. Pass `false` as the in-code default value. The SDK returns it only when it cannot evaluate the flag, so users then keep the current behavior. It is not the default targeting rule value, which lives in ConfigDirector and is what turns the flag on; never pass `true` to release the change.
-3. Put the new code on the `true` branch and keep the current behavior on the `false` branch, unchanged. Keep the branch small, so removing the flag later means deleting one side.
+3. Put the new code on the `true` branch and keep the current behavior on the `false` branch, unchanged. Keep the branch small, so removing the flag later means deleting one side, which `configdirector-clean-up-flag` does once the flag has settled.
 4. Add or adjust tests for both branches, one with the flag on and one with it off, following `configdirector-test-with-flags`.
 5. Run the project's build, typecheck and tests, and fix anything the change broke.
 

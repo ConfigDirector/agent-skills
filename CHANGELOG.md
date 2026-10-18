@@ -4,6 +4,16 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-17
+
+### Added
+
+- The `configdirector-clean-up-flag` skill. It removes a settled temporary feature flag from your code, keeping the branch the flag serves. It reads the config's lifecycle state, its recent evaluations and which environments are live, and goes on only for a flag that is settled, archive ready or stale: a new or in-use flag, a kill switch or a permanent config stops it, with the facts shown, which environments evaluated the flag, when, from which SDKs, and the rules in each. It finds every reference with `configdirector scan`, direct, indirect and test references, under the current key and any old key, and stops when the scan lists a dynamic reference it cannot resolve. It proposes the branch to keep, the single value the live environments serve for a settled flag, and lists every reference and what happens to it before editing: the evaluation replaced by the kept branch, the other branch and its tests removed, the constant removed when nothing else reads it. After your yes it edits, runs your project's checks and scans again. It archives the config only once you confirm the removal is deployed everywhere that read the flag, and advises waiting a day or two after that deploy in case of a rollback; otherwise it ends without archiving and tells you how to archive later. It works through the ConfigDirector MCP server or the ConfigDirector CLI, with an API token that has `Projects: Read`, `Environments: Read`, `Configs: Read` and `Configs: Archive`, and needs the CLI for `scan` on either route.
+
+### Changed
+
+- `configdirector-flag-a-change` names `configdirector-clean-up-flag` as the way to remove the flag once it has settled.
+
 ## [0.4.0] - 2026-10-17
 
 ### Added
