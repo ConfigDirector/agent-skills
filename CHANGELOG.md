@@ -4,6 +4,17 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-17
+
+### Added
+
+- The `configdirector-flag-a-change` skill. It wraps a code change in a new temporary feature flag: it proposes a key named after what the change controls, checks that no config in the project has it, and once you confirm, creates a boolean feature flag served to the kind of SDK your code uses, with the default targeting rule value `false` in every environment. It then reads the flag once with the in-code default value `false`, puts the new code where the flag is on and keeps the current behavior where it is off, tests both branches, runs your project's checks, and tells you how to turn the flag on. It works through the ConfigDirector MCP server or the ConfigDirector CLI, with an API token that has `Projects: Read`, `Configs: Read` and `Configs: Create`.
+
+### Changed
+
+- `configdirector-setup` creates the first flag through the ConfigDirector CLI when the MCP server is not connected, instead of asking you to create it in the dashboard. On the CLI, it links the repository to the project with `configdirector init` when the repository has no `configdirector.json`, and when the repository has one, the flag goes in the project it names. With neither the MCP server nor the CLI set up, it sends you to `configdirector-connect` and asks you to create the flag in the dashboard, as before.
+- `configdirector-connect` checks CLI access by listing your projects with `configdirector projects list`, so the check no longer asks for a project slug or writes `configdirector.json`. The command needs `@configdirector/cli` 0.5.0-beta.1 or later, and the skill asks you to update an older CLI. When ConfigDirector rejects the token, for example because it expired, the skill says so and asks you to create another.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added

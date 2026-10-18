@@ -4,7 +4,7 @@ description: Set up and check this coding agent's access to ConfigDirector, thro
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Connect this agent to ConfigDirector
@@ -56,16 +56,13 @@ Call `list_projects`. Report the projects it returns and the ConfigDirector tool
 
 ### CLI
 
-The CLI does not list projects yet, so the check is one of these:
-
-- When the repository has no `configdirector.json`, ask for the project's slug, shown as **Project slug** on the project's **Project details** page in the dashboard, and run `configdirector init --project <slug>` from the repository root. It writes `configdirector.json`.
-- When the repository has `configdirector.json`, run `configdirector scan --json`.
-
-Report the project the output names. Read the result like this:
+Run `configdirector projects list --json`. Report the projects it lists, by name and slug. Read the result like this:
 
 - Exit 2 with `No API token found`: the token is not where the agent runs commands. Ask the user to repeat item 2 of the CLI setup, then try again.
-- Exit 2 with a permissions error: the message names the missing permission in its short form, such as `configs:read`. Tell the user which one in the dashboard's wording, `Configs: Read`, and that they can add it to the token on the **API tokens** page.
-- Exit 0: the token reads the project, which proves `Projects: Read`, and `Configs: Read` as well when `scan` ran.
+- Exit 2 with `unknown command 'projects'`: the installed CLI is older than the commands the skills use. Ask the user to repeat item 1 of the CLI setup, which updates it, then try again.
+- Exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`: the message names the missing permission in its short form, such as `projects:read`. Tell the user which one in the dashboard's wording, `Projects: Read`, and that they can add it to the token on the **API tokens** page.
+- Exit 2 with `The Admin API refused the request` and another code, such as `API_TOKEN_EXPIRED`: the token was rejected, and the message says why. Ask the user to create another token as in step 2 and repeat item 2 of the CLI setup, then try again.
+- Exit 0: the token reads the organization's projects, which proves `Projects: Read`.
 
 The CLI cannot list a token's permissions. Report what the check proved and, separately, the permissions the user chose in step 1.
 

@@ -4,7 +4,7 @@ description: Add configdirector validate to this repository's CI, so the build f
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Check config keys in CI

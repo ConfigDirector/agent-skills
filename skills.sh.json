@@ -8,6 +8,7 @@
       "skills": [
         "configdirector-setup",
         "configdirector-connect",
+        "configdirector-flag-a-change",
         "configdirector-use-configs-in-code",
         "configdirector-test-with-flags",
         "configdirector-validate-in-ci"

@@ -4,7 +4,7 @@ description: Rules for testing code that reads a ConfigDirector config or featur
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Test code that reads flags and configs

@@ -4,7 +4,7 @@ description: Add ConfigDirector feature flags and remote config to the current p
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Add ConfigDirector to this project
@@ -62,19 +62,26 @@ Fetch the docs page from the table and follow it for the install command, the in
 
 ## 4. Create the first flag
 
-Use the ConfigDirector MCP tools (`list_projects`, `list_configs`, `create_config`) when the ConfigDirector MCP server is connected. If no ConfigDirector tool is available, tell the user to run the `configdirector-connect` skill to set up the agent's access with an API token that has the permissions above; then continue with the fallback at the end of this step for this run. If the tools are available but `create_config` is not among them, the token lacks the `Configs: Create` permission; continue with the fallback as well.
+Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run. With the CLI, always pass `--json` and read the output, never the human text. Each item below names the MCP tool first and the CLI command second.
 
-1. Call `list_projects`. If there is more than one project, ask which one this app belongs to.
-2. Ask what the first flag should control, and propose a key in kebab case, for example `new-checkout-page`. Call `list_configs` to make sure the key is not already used.
+When an item fails, tell the user why and continue with the fallback at the end of this step for this run:
+
+- No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Tell the user to run the `configdirector-connect` skill to set up the agent's access with an API token that has the permissions above.
+- Exit 2 with `unknown command`: the installed CLI is older than the commands this step uses. Tell the user to install `@configdirector/cli@beta` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
+- A permission is missing: on MCP, a tool missing from the list, such as `create_config` without `Configs: Create`; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`, whose message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `configs:read` is `Configs: Read`, `configs:create` is `Configs: Create`), and that they can add it to the token on the **API tokens** page.
+- Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do.
+
+1. List the projects: `list_projects` / `configdirector projects list --json`. When the repository has `configdirector.json`, the project is the one whose slug is its `project`. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one this app belongs to. On the CLI route, then run `configdirector init --project <slug>` from the repository root, which writes `configdirector.json` so later CLI runs, such as `configdirector validate`, find the project. The MCP route writes no file. Run the CLI commands below from the directory that holds `configdirector.json`.
+2. Ask what the first flag should control, and propose a key in kebab case, for example `new-checkout-page`. Make sure no config has it as its `key` or among its `deprecatedKeys`: `list_configs` / `configdirector configs list --json`.
 3. Propose these settings and ask the user to confirm or change them before creating anything:
    - role: feature flag
    - lifetime: temporary
    - type: boolean
    - default targeting rule value: `false`, so nothing changes for users until the flag is turned on
    - delivered to client SDKs, server SDKs, or both, matching the SDK from step 1
-4. After the user confirms, call `create_config` with those settings.
+4. After the user confirms, create it with those settings: `create_config` / `configdirector configs create --key <key> --type boolean --role flag --lifetime temporary --default-value false --json`, adding `--client-only` or `--server-only` when only one kind of SDK receives it. When the create reports the key taken (on the CLI, exit 1 with the config that has it), propose another key and confirm again.
 
-Fallback without the MCP tools: tell the user to create a boolean feature flag with the proposed key in the dashboard, then continue with step 5 using that key.
+Fallback: tell the user to create a boolean feature flag in the dashboard with the proposed key and settings, then continue with step 5 using that key.
 
 ## 5. Evaluate the flag in code
 
@@ -84,4 +91,4 @@ Ask where the flag should take effect, then add the evaluation call from the doc
 
 - Run the project's build, typecheck, or tests if it has them, and fix anything the change broke.
 - Summarize for the user: the SDK installed, the files changed, the environment variable to set and where to get its value, the flag created, and where the code evaluates it.
-- Tell them how to see it work: set the SDK key, start the app, then turn the flag on in the dashboard for their environment (edit the default targeting rule value to `true`), or ask to have its targeting rules updated through the MCP tools.
+- Tell them how to see it work: set the SDK key, start the app, then turn the flag on for their environment, in the dashboard on the flag's **Targeting rules** tab (set the default targeting rule value to `true`), or through the MCP server's `update_targeting_rules`.
