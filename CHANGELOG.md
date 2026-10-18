@@ -4,6 +4,12 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-17
+
+### Added
+
+- The `configdirector-create-config` skill, the first operator skill. It creates a config of any role and type from your description: a feature flag, kill switch, config or experiment, with its lifetime, its type's constraints (a number's range, a timespan's unit and range, an enum's allowed values, HTTPS only for a URL, a JSON Schema), the SDKs that receive it, tags by name and an experiment's variations. Before creating anything, it shows you every setting and the default targeting rule value every environment starts with, asks for any setting it cannot work out from your description instead of guessing it, and waits for your yes. A tag name no tag of the project has is reported, never created. It works through the ConfigDirector MCP server or the ConfigDirector CLI, with an API token that has `Projects: Read`, `Configs: Read` and `Configs: Create`, plus `Tags: Read` and `Configs: Update settings` for a config with tags.
+
 ## [0.2.0] - 2026-10-17
 
 ### Added
