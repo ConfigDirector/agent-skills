@@ -4,7 +4,7 @@ description: Add ConfigDirector feature flags and remote config to the current p
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.3.0
+  version: 0.4.0
 ---
 
 # Add ConfigDirector to this project
@@ -91,4 +91,4 @@ Ask where the flag should take effect, then add the evaluation call from the doc
 
 - Run the project's build, typecheck, or tests if it has them, and fix anything the change broke.
 - Summarize for the user: the SDK installed, the files changed, the environment variable to set and where to get its value, the flag created, and where the code evaluates it.
-- Tell them how to see it work: set the SDK key, start the app, then turn the flag on for their environment, in the dashboard on the flag's **Targeting rules** tab (set the default targeting rule value to `true`), or through the MCP server's `update_targeting_rules`.
+- Tell them how to see it work: set the SDK key, start the app, then turn the flag on for their environment, in the dashboard on the flag's **Targeting rules** tab (set the default targeting rule value to `true`), or by asking you to turn it on, which `configdirector-roll-out` does through the MCP server or the CLI.

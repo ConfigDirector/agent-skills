@@ -4,7 +4,7 @@ description: Create a ConfigDirector config of any role and type from a descript
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.3.0
+  version: 0.4.0
 ---
 
 # Create a config
@@ -101,4 +101,4 @@ In a few lines, tell the user:
 - what was created, with its settings as ConfigDirector returned them;
 - that every environment serves the default targeting rule value until its targeting rules change;
 - how to read it in code: `configdirector-use-configs-in-code` gives the rules, such as the type each SDK serves it as and what the in-code default value is for;
-- how to change its targeting rules, one environment at a time: in the dashboard on the config's **Targeting rules** tab, or through the MCP server's `update_targeting_rules`.
+- how to change its targeting rules, one environment at a time: in the dashboard on the config's **Targeting rules** tab, or by asking you to, which `configdirector-roll-out` does through the MCP server or the CLI.

@@ -17,7 +17,7 @@
     {
       "title": "Operator",
       "description": "Skills for creating configs and changing targeting rules from your coding agent.",
-      "skills": ["configdirector-create-config"]
+      "skills": ["configdirector-create-config", "configdirector-roll-out"]
     }
   ]
 }

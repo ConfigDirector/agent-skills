@@ -4,6 +4,16 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-17
+
+### Added
+
+- The `configdirector-roll-out` skill, the second operator skill. It changes a config's targeting rules in one environment from your description: it turns a flag on or off, rolls a change out to a percentage, targets specific users, contexts with certain attributes, or a segment, sets an experiment split, or changes the value the config serves. It reads the environment's current rules and the targeting rules reference before composing anything, so every condition and operator it writes is one ConfigDirector takes, and keeps every rule you did not ask it to change. Before writing, it shows the current and the resulting rules side by side, says in words what changes, and waits for your yes; in a live environment, it tells you the environment serves real traffic, shows the change again and asks for an explicit yes. When ConfigDirector refuses the rules, it shows the reasons, fixes the rules and asks again. On request, it evaluates the config for a context you describe and shows the value served and the rule that served it. It ends by printing the previous rules, so you can put them back. It works through the ConfigDirector MCP server or the ConfigDirector CLI, with an API token that has `Projects: Read`, `Environments: Read`, `Configs: Read` and `Configs: Update targeting rules`, plus `Segments: Read` for rules with a segment and `Contexts: Read` to evaluate a saved context.
+
+### Changed
+
+- `configdirector-setup` and `configdirector-flag-a-change` name `configdirector-roll-out` as the way to turn the new flag on from your agent, through the MCP server or the CLI, beside the dashboard's **Targeting rules** tab, and `configdirector-create-config` names it as the way to change the new config's targeting rules. Before, they named the MCP server's `update_targeting_rules`.
+
 ## [0.3.0] - 2026-10-17
 
 ### Added

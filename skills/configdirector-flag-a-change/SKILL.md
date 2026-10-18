@@ -4,7 +4,7 @@ description: Wrap a code change in a new temporary ConfigDirector feature flag t
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.3.0
+  version: 0.4.0
 ---
 
 # Wrap a change in a feature flag
@@ -63,4 +63,4 @@ In a few lines, tell the user:
 
 - the flag's key, and that it is off in every environment: each serves `false` until its targeting rules change;
 - where the code reads it, by file and line, and the tests for each branch;
-- how to turn it on, one environment at a time: in the dashboard on the flag's **Targeting rules** tab, by setting the default targeting rule value to `true`, or through the MCP server's `update_targeting_rules`.
+- how to turn it on, one environment at a time: in the dashboard on the flag's **Targeting rules** tab, by setting the default targeting rule value to `true`, or by asking you to turn it on, which `configdirector-roll-out` does through the MCP server or the CLI.
