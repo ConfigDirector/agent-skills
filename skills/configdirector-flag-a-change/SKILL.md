@@ -4,7 +4,7 @@ description: Wrap a code change in a new temporary ConfigDirector feature flag t
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.5.0
+  version: 0.6.0
 ---
 
 # Wrap a change in a feature flag

@@ -4,6 +4,12 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-18
+
+### Changed
+
+- `configdirector-validate-in-ci` adds the ConfigDirector Code Scan action, `ConfigDirector/scan-code@v1`, on GitHub, in place of the `npx` step. The action runs `configdirector validate` on pull requests, as the step did, and on pushes to your default branch also uploads where each config is read, so each config's **Code references** tab in the dashboard shows the code that reads it, and the configs list marks the configs no scanned repository reads outside tests as **Not in code**. The skill asks whether the action should upload and, since an upload sends a few lines of code around each reference, whether to leave them out, and names the CI token's permissions for your answer: `Projects: Read`, `Configs: Read` and `Code references: Update` with the upload, and `Projects: Read` and `Configs: Read` with `upload: false`. GitLab and other CI systems keep the `npx` command, and so does GitHub when you ask for it.
+
 ## [0.5.0] - 2026-10-17
 
 ### Added

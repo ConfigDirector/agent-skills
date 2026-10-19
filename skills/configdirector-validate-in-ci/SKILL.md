@@ -1,23 +1,23 @@
 ---
 name: configdirector-validate-in-ci
-description: Add configdirector validate to this repository's CI, so the build fails when the code reads a config key that does not exist, was renamed, or has the wrong type, with a CI-only API token the user creates and the agent never sees. Use when the user asks to check config keys in CI, to add configdirector validate or the ConfigDirector CLI to a pipeline, or to fail the build on wrong flag keys.
+description: Add configdirector validate to this repository's CI, so the build fails when the code reads a config key that does not exist, was renamed, or has the wrong type, with a CI-only API token the user creates and the agent never sees. On GitHub it adds the ConfigDirector Code Scan action, which also uploads where each config is read on pushes to the default branch. Use when the user asks to check config keys in CI, to add configdirector validate, the ConfigDirector CLI or the ConfigDirector GitHub Action to a pipeline, to upload code references from GitHub Actions, or to fail the build on wrong flag keys.
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.5.0
+  version: 0.6.0
 ---
 
 # Check config keys in CI
 
-Work through the steps in order. The result is a CI job that runs `configdirector validate`, which fails the build when the code reads a key no config in the project has, the old key of a renamed config, or a config in a way ConfigDirector does not serve it.
+Work through the steps in order. The result is a CI job that runs `configdirector validate`, which fails the build when the code reads a key no config in the project has, the old key of a renamed config, or a config in a way ConfigDirector does not serve it. On GitHub, unless the user asks for the `npx` command, the job runs the ConfigDirector Code Scan action, `ConfigDirector/scan-code@v1`, which can also upload the scan on pushes to the default branch.
 
-The CI job needs an API token with `Projects: Read` and `Configs: Read`, as the ConfigDirector dashboard names them under **API tokens**; the user creates it, for CI only, in step 3. The commands you run yourself in steps 2 and 6 use the token already set where you run commands, which `configdirector-connect` sets up.
+The CI job needs an API token of its own, which the user creates for CI only in step 3. Its permissions are named there as the ConfigDirector dashboard shows them under **API tokens**. The commands you run yourself in steps 2 and 6 use the token already set where you run commands, which `configdirector-connect` sets up.
 
 Both tokens are the user's. Never ask for one, never read one from a file, and never write one anywhere, the workflow and `configdirector.json` included: CI reads its token from the secret `CONFIGDIRECTOR_TOKEN`. If the user pastes a token into the conversation, tell them it is now in the transcript, ask them to revoke it on the **API tokens** page and create another, and go on without it.
 
 ## 1. Read the CLI docs page
 
-Fetch https://docs.configdirector.com/integrations/cli. It is the source for the install line, the `configdirector.json` fields, the GitHub Actions workflow and the GitLab job, the problems `validate` reports, and the exit codes. Copy them from the page, never from memory.
+Fetch https://docs.configdirector.com/integrations/cli. It is the source for the install line, the `configdirector.json` fields, the GitHub Actions workflow and the action's inputs, the GitLab job, the problems `validate` reports, and the exit codes. Copy them from the page, never from memory.
 
 Run `configdirector --version`. When the CLI is not installed, write `npx --yes @configdirector/cli@beta` in place of `configdirector` in every command below.
 
@@ -40,7 +40,9 @@ Otherwise:
 
 Find the CI system first: `.github/workflows/` is GitHub Actions, `.gitlab-ci.yml` is GitLab. When the repository has both or neither, ask which one runs its checks.
 
-Tell the user to create a token used only by CI, in the dashboard under **API tokens**, with `Projects: Read` and `Configs: Read`, and to save it as a secret named `CONFIGDIRECTOR_TOKEN`:
+On GitHub, unless the user asked for the `npx` command rather than the action, ask whether the action should also upload the scan on pushes to the default branch, which it does by default. The upload lets each config's **Code references** tab in the dashboard show the code that reads it, and marks the configs no scanned repository reads outside tests as **Not in code** on the project's configs list. When they want the upload, tell them it also sends a few lines of code around each reference, and that the page's **What leaves your repository** lists everything it sends; ask whether to leave those lines out with `snippets: false`. The answers decide the token's permissions here and the action's inputs in step 4.
+
+Tell the user to create a token used only by CI, in the dashboard under **API tokens**, and to save it as a secret named `CONFIGDIRECTOR_TOKEN`. The token needs `Projects: Read` and `Configs: Read`, and `Code references: Update` as well when the action uploads. With `upload: false`, on GitLab, on another CI system or with the `npx` command of step 4, the two read permissions are enough, and the token cannot change anything. The secret goes:
 
 - GitHub: under the repository's **Settings → Secrets and variables → Actions**.
 - GitLab: as a masked variable under the project's **Settings → CI/CD → Variables**, with **Protect variable** left unmarked, so merge request pipelines get it too.
@@ -52,11 +54,12 @@ The user adds the secret themselves, now or before the first CI run. Go on with 
 
 ## 4. Add the job
 
-- GitHub Actions: when a workflow already has a job that runs on pull requests, checks out the code and sets up Node 20 or later, add the last step of the page's workflow, with its `env`, to that job. Otherwise add the page's workflow as the file it names.
+- GitHub Actions: `git symbolic-ref --short refs/remotes/origin/HEAD` prints the default branch after `origin/`; when it fails, ask for it. Add the action's step from the page's workflow, with its `with`, as the last step of an existing job that checks out the code and runs on pull requests and, with the upload, on pushes to the default branch, and leave the job's other steps as they are. When no job does, add the page's workflow as the file it names, with `main` replaced by the default branch when that is another one. Add `upload: false` or `snippets: false` under `with` when the user chose so in step 3.
+- GitHub Actions, when the user asked for the `npx` command rather than the action: add a step that runs `npx --yes @configdirector/cli@beta validate`, with `CONFIGDIRECTOR_TOKEN: ${{ secrets.CONFIGDIRECTOR_TOKEN }}` in its `env`, to a job that runs on pull requests, checks out the code and sets up Node 20 or later. It never uploads. When no job does, give the user the command as for another CI system.
 - GitLab: add the page's job to `.gitlab-ci.yml`.
 - Another CI system: give the user the command `npx --yes @configdirector/cli@beta validate`, run with Node 20 or later and the secret from step 3, for them to place in their pipeline.
 
-The command runs from the directory that holds `configdirector.json`; when that is not the repository root, set the step's working directory to it. Copy the page's versions as they stand, the actions, the Node version and `@configdirector/cli@beta`, and pin nothing else.
+The check runs from the directory that holds `configdirector.json`; when that is not the repository root, set the action's `working-directory` input to it, or the working directory of the step or job that runs the `npx` command. Copy the page's versions as they stand, the actions, the Node version and `@configdirector/cli@beta`, and pin nothing else.
 
 ## 5. Scope the check
 
@@ -81,5 +84,6 @@ When the summary counts dynamic references, tell the user they are never checked
 In a few lines, tell the user:
 
 - the files changed, `configdirector.json` and the workflow or `.gitlab-ci.yml`, to commit together, or the command for their CI system;
-- the secret to add, `CONFIGDIRECTOR_TOKEN` with a CI-only token that has `Projects: Read` and `Configs: Read`, and where;
-- what the first CI run will show: the findings of step 6 still open, with exit 1, or a pass; and exit 2 with `No API token found` if it runs before the secret is added.
+- the secret to add, `CONFIGDIRECTOR_TOKEN` with a CI-only token that has the permissions step 3 named for their choice, and where;
+- what the first CI run will show: the findings of step 6 still open, with exit 1, or a pass; and exit 2 with `No API token found` if it runs before the secret is added;
+- with the upload, that the first push to the default branch fills each config's **Code references** tab, and that a token without `Code references: Update` passes pull requests but fails on the default branch, with `INSUFFICIENT_PERMISSIONS` in the log.
