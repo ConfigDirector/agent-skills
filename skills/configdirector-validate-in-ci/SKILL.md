@@ -4,7 +4,7 @@ description: Add configdirector validate to this repository's CI, so the build f
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.6.0
+  version: 0.7.0
 ---
 
 # Check config keys in CI
@@ -23,16 +23,17 @@ Run `configdirector --version`. When the CLI is not installed, write `npx --yes 
 
 ## 2. Link the repository to its project
 
-When `configdirector.json` already exists, at the repository root or in the app's directory of a monorepo, read its `project` and go on to step 3. `init` never overwrites the file, so edit it when it needs to change.
+When `configdirector.json` already exists, at the repository root or in the app's directory of a monorepo, read its `project` and go on to step 3. `init` only adds `organization` to an existing file, so edit the file when anything else needs to change.
 
 Otherwise:
 
 1. Ask for the project's slug, shown as **Project slug** on the project's **Project details** page in the dashboard. When the ConfigDirector MCP server is connected, call `list_projects` and offer the slugs it returns.
-2. Run `configdirector init --project <slug>` from the repository root. It checks that the project exists and writes `configdirector.json`.
+2. Run `configdirector init --project <slug>` from the repository root. It looks for the project through every organization the CLI is signed in to, and writes `configdirector.json` with the project's slug and its organization's id.
 3. Read the result:
    - Exit 0: the file is written. It is committed with the CI change, so every run and every CI job uses the same project.
    - Exit 2 with `No API token found`: no token is set where you run commands. Send the user to `configdirector-connect` for one with `Projects: Read` and `Configs: Read`, then run `init` again.
-   - Exit 2 with `No project in the API token's organization has the slug`: ask for the slug again, and whether the token belongs to the organization that holds the project.
+   - Exit 2 with `both have a project with the slug`: several organizations the CLI is signed in to have a project with that slug. Ask the user which organization, offering the names the message lists, and run `configdirector init --project <slug> --organization <name>`.
+   - Exit 2 with `No project has the slug` or `No project in the API token's organization has the slug`: ask for the slug again, and whether the CLI is signed in to the organization that holds the project. When it is not, send the user to `configdirector-connect`.
    - Exit 2 with `The Admin API refused the request`: the token was rejected, or it lacks the permission the message names in its short form, such as `projects:read`. Tell the user which one in the dashboard's wording, `Projects: Read`, and send them to `configdirector-connect`.
    - Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
 
@@ -73,9 +74,11 @@ Run `configdirector validate` from the directory that holds `configdirector.json
 
 - Exit 0: no problem, so the CI job passes on this code.
 - Exit 1: at least one finding, meaning the code reads a config wrong, so the CI job fails until each is settled. Explain each finding by its kind as the page's table does: what it means for the app, and what to do. Each finding is the user's to settle: correct the key in the code, create the config in ConfigDirector, or add the key to `ignoreKeys`. Change nothing in ConfigDirector, and change the code only once the user chooses.
-- Exit 2: the command could not run, and the message says why. No token, a rejected token or a missing permission sends the user to `configdirector-connect`, with a missing permission named as in step 2.
+- Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
+- Exit 2 with `The token from` and `belongs to the organization`: the token the CLI used belongs to another organization than the one `configdirector.json` names. Tell the user so, and where the token came from, as the message names it, such as `CONFIGDIRECTOR_TOKEN`. Send them to `configdirector-connect`.
+- Exit 2 with any other message: the command could not run, and the message says why. No token, a rejected token or a missing permission sends the user to `configdirector-connect`, with a missing permission named as in step 2.
 
-Tell the user the codes mean the same in CI. There, exit 2 is a missing `CONFIGDIRECTOR_TOKEN` secret (`No API token found`), a rejected token, a missing permission or an outage, so a build that fails with 2 is never a wrong key: the token or the service needs looking at, not the code.
+Tell the user the codes mean the same in CI. There, exit 2 is a missing `CONFIGDIRECTOR_TOKEN` secret (`No API token found`), a rejected token, a token of another organization than the one `configdirector.json` names, a missing permission or an outage, so a build that fails with 2 is never a wrong key: the token or the service needs looking at, not the code.
 
 When the summary counts dynamic references, tell the user they are never checked, so a wrong key in one passes the build; `configdirector-use-configs-in-code` shows how to read a key so it is checked.
 

@@ -4,7 +4,7 @@ description: Rules for testing code that reads a ConfigDirector config or featur
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.6.0
+  version: 0.7.0
 ---
 
 # Test code that reads flags and configs
@@ -36,4 +36,6 @@ If no dependency matches, the project does not use ConfigDirector yet; `configdi
 2. Add the testing entry point or artifact in test scope, as the page shows. It ships with the SDK the project already depends on.
 3. Find how the code under test gets its client (passed in, a provider, a module that creates it, a dependency injection container) and put the test client there the way the page shows for that case: an install function, the project's own setup module or getter, or the project's dependency injection, never the SDK's module. The test owns the client's lifecycle: initialize it when the code under test does not, and close or dispose it after each test.
 4. Write one named test per branch: create the test client with the values for that branch, exercise the code, assert the behavior of that branch. Use the test client's controls from the page for the rest, such as changing a value while the code runs or holding initialization to see the in-code default value.
-5. Run the tests. When the CLI is installed and the repository holds a `configdirector.json`, run `configdirector scan` from the directory that holds it and confirm the new references are listed as `test` under the keys the code reads; a test client call listed under _Dynamic references_ was given its keys in a way the scan cannot resolve.
+5. Run the tests. When the CLI is installed and the repository holds a `configdirector.json`, run `configdirector scan` from the directory that holds it and confirm the new references are listed as `test` under the keys the code reads; a test client call listed under _Dynamic references_ was given its keys in a way the scan cannot resolve. When `scan` exits with 2, the message says why, and two messages need more:
+   - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
+   - Exit 2 with `The token from` and `belongs to the organization`: the token the CLI used belongs to another organization than the one `configdirector.json` names. Tell the user so, and where the token came from, as the message names it, such as `CONFIGDIRECTOR_TOKEN`. Send them to `configdirector-connect`.

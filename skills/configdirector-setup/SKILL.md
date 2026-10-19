@@ -4,7 +4,7 @@ description: Add ConfigDirector feature flags and remote config to the current p
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.6.0
+  version: 0.7.0
 ---
 
 # Add ConfigDirector to this project
@@ -64,14 +64,16 @@ Fetch the docs page from the table and follow it for the install command, the in
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run. With the CLI, always pass `--json` and read the output, never the human text. Each item below names the MCP tool first and the CLI command second.
 
-When an item fails, tell the user why and continue with the fallback at the end of this step for this run:
+When an item fails, tell the user why. Where the case below says to run the command again, do so; otherwise continue with the fallback at the end of this step for this run:
 
-- No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Tell the user to run the `configdirector-connect` skill to set up the agent's access with an API token that has the permissions above.
+- No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Tell the user to run the `configdirector-connect` skill to set up the agent's access with an API token that has the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this step uses. Tell the user to install `@configdirector/cli@beta` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
+- Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
+- The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
 - A permission is missing: on MCP, a tool missing from the list, such as `create_config` without `Configs: Create`; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`, whose message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `configs:read` is `Configs: Read`, `configs:create` is `Configs: Create`), and that they can add it to the token on the **API tokens** page.
 - Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do.
 
-1. List the projects: `list_projects` / `configdirector projects list --json`. When the repository has `configdirector.json`, the project is the one whose slug is its `project`. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one this app belongs to. On the CLI route, then run `configdirector init --project <slug>` from the repository root, which writes `configdirector.json` so later CLI runs, such as `configdirector validate`, find the project. The MCP route writes no file. Run the CLI commands below from the directory that holds `configdirector.json`.
+1. List the projects: `list_projects` / `configdirector projects list --json`. When the repository has `configdirector.json`, run `projects list` from the directory that holds it, and the project is the one whose slug is its `project`. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one this app belongs to. On the CLI route, then run `configdirector init --project <slug>` from the repository root, which writes `configdirector.json` so later CLI runs, such as `configdirector validate`, find the project. The MCP route writes no file. Run the CLI commands below from the directory that holds `configdirector.json`.
 2. Ask what the first flag should control, and propose a key in kebab case, for example `new-checkout-page`. Make sure no config has it as its `key` or among its `deprecatedKeys`: `list_configs` / `configdirector configs list --json`.
 3. Propose these settings and ask the user to confirm or change them before creating anything:
    - role: feature flag

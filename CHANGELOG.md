@@ -4,6 +4,14 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-19
+
+### Changed
+
+- `configdirector-connect` sets up access for each organization you work with. On the CLI, it has you run `configdirector login` once for each organization, and checks the access with a second read, `configdirector api-token get`, which reports the token's organization and its permissions in the dashboard's wording; when the CLI is signed in to several organizations and nothing names the one you mean, it asks which. Through the MCP server, it asks whether you work with more than one organization, and if you do, writes each repository's configuration with a variable named for its organization, such as `CONFIGDIRECTOR_TOKEN_ACME`, as the MCP docs page shows. It ends by naming the organization the agent reaches. The CLI check needs `@configdirector/cli` 0.10.0-beta.1 or later, and the skill asks you to update an older CLI.
+- Every skill that runs the CLI asks which organization you mean when the CLI is signed in to several and nothing names the repository's. It then adds the organization to the repository's `configdirector.json` with `configdirector init --organization` and tells you the file changed, so it goes in your next commit. `configdirector-validate-in-ci` also asks which organization when the project's slug is found in several, and asks for the slug again when no organization the CLI is signed in to has it.
+- When the token belongs to another organization than the one `configdirector.json` names, every skill that runs the CLI tells you so, and where the token came from, such as `CONFIGDIRECTOR_TOKEN`, and sends you to `configdirector-connect` instead of using it. The skills that find the project in your account, `setup`, `flag-a-change`, `create-config`, `roll-out` and `clean-up-flag`, check this through the MCP server too.
+
 ## [0.6.0] - 2026-10-18
 
 ### Changed

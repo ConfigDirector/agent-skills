@@ -4,7 +4,7 @@ description: Rules for code that reads a ConfigDirector config or feature flag t
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.6.0
+  version: 0.7.0
 ---
 
 # Use configs in code
@@ -37,7 +37,9 @@ If no dependency matches, the project does not use ConfigDirector yet; `configdi
 
 1. Find where the project creates its client and how the code gets it (a module, a provider, a dependency injection container). Read the config through that, never through a new client.
 2. Take the evaluation call from the SDK page: the hook, composable, getter or method for the config's type, with the key as a literal or an existing constant and the safe value as the in-code default value.
-3. Run the project's typecheck or build, and `configdirector validate` when the CLI is installed and the repository holds a `configdirector.json` (the file `configdirector init` writes), from the directory that holds it. It checks every key and type against the project's configs and exits with 1 on a finding, or with 2 when it could not run, with a message that says why.
+3. Run the project's typecheck or build, and `configdirector validate` when the CLI is installed and the repository holds a `configdirector.json` (the file `configdirector init` writes), from the directory that holds it. It checks every key and type against the project's configs and exits with 1 on a finding, or with 2 when it could not run, with a message that says why. Two of those messages need more:
+   - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
+   - Exit 2 with `The token from` and `belongs to the organization`: the token the CLI used belongs to another organization than the one `configdirector.json` names. Tell the user so, and where the token came from, as the message names it, such as `CONFIGDIRECTOR_TOKEN`. Send them to `configdirector-connect`.
 
 ## 4. Reviewing code that reads configs
 
@@ -50,4 +52,4 @@ Read every file that imports the SDK or the project's own module around it, and 
 - a key built at runtime, read from a variable, or assigned in more than one place;
 - a client created per request, per call, or inside a component or handler.
 
-When the CLI is installed and `configdirector.json` exists, run `configdirector validate` and add its findings to the review; `configdirector scan` lists the dynamic references `validate` cannot check. The CLI docs page, https://docs.configdirector.com/integrations/cli, explains each finding and what to do about it. When `validate` exits with 2, report what it said and that the keys were not checked against the project, and go on with the review.
+When the CLI is installed and `configdirector.json` exists, run `configdirector validate` and add its findings to the review; `configdirector scan` lists the dynamic references `validate` cannot check. The CLI docs page, https://docs.configdirector.com/integrations/cli, explains each finding and what to do about it. When `validate` exits with 2, read the two messages step 3 names as it says; for any other, report what it said and that the keys were not checked against the project, and go on with the review.
