@@ -4,6 +4,12 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-19
+
+### Changed
+
+- The skills install and run the CLI as `@configdirector/cli`, without `@beta`, since the CLI is published under npm's `latest` tag from 0.11.0. `configdirector-validate-in-ci` gives you `npx --yes @configdirector/cli` for GitLab and other CI systems, and when a skill finds the CLI too old for its commands, it asks you to install `@configdirector/cli` again, which also moves an `@beta` install, left on the last beta, to the newest release.
+
 ## [0.7.0] - 2026-10-19
 
 ### Changed

@@ -4,7 +4,7 @@ description: Add configdirector validate to this repository's CI, so the build f
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.7.0
+  version: 0.8.0
 ---
 
 # Check config keys in CI
@@ -19,7 +19,7 @@ Both tokens are the user's. Never ask for one, never read one from a file, and n
 
 Fetch https://docs.configdirector.com/integrations/cli. It is the source for the install line, the `configdirector.json` fields, the GitHub Actions workflow and the action's inputs, the GitLab job, the problems `validate` reports, and the exit codes. Copy them from the page, never from memory.
 
-Run `configdirector --version`. When the CLI is not installed, write `npx --yes @configdirector/cli@beta` in place of `configdirector` in every command below.
+Run `configdirector --version`. When the CLI is not installed, write `npx --yes @configdirector/cli` in place of `configdirector` in every command below.
 
 ## 2. Link the repository to its project
 
@@ -56,11 +56,11 @@ The user adds the secret themselves, now or before the first CI run. Go on with 
 ## 4. Add the job
 
 - GitHub Actions: `git symbolic-ref --short refs/remotes/origin/HEAD` prints the default branch after `origin/`; when it fails, ask for it. Add the action's step from the page's workflow, with its `with`, as the last step of an existing job that checks out the code and runs on pull requests and, with the upload, on pushes to the default branch, and leave the job's other steps as they are. When no job does, add the page's workflow as the file it names, with `main` replaced by the default branch when that is another one. Add `upload: false` or `snippets: false` under `with` when the user chose so in step 3.
-- GitHub Actions, when the user asked for the `npx` command rather than the action: add a step that runs `npx --yes @configdirector/cli@beta validate`, with `CONFIGDIRECTOR_TOKEN: ${{ secrets.CONFIGDIRECTOR_TOKEN }}` in its `env`, to a job that runs on pull requests, checks out the code and sets up Node 20 or later. It never uploads. When no job does, give the user the command as for another CI system.
+- GitHub Actions, when the user asked for the `npx` command rather than the action: add a step that runs `npx --yes @configdirector/cli validate`, with `CONFIGDIRECTOR_TOKEN: ${{ secrets.CONFIGDIRECTOR_TOKEN }}` in its `env`, to a job that runs on pull requests, checks out the code and sets up Node 20 or later. It never uploads. When no job does, give the user the command as for another CI system.
 - GitLab: add the page's job to `.gitlab-ci.yml`.
-- Another CI system: give the user the command `npx --yes @configdirector/cli@beta validate`, run with Node 20 or later and the secret from step 3, for them to place in their pipeline.
+- Another CI system: give the user the command `npx --yes @configdirector/cli validate`, run with Node 20 or later and the secret from step 3, for them to place in their pipeline.
 
-The check runs from the directory that holds `configdirector.json`; when that is not the repository root, set the action's `working-directory` input to it, or the working directory of the step or job that runs the `npx` command. Copy the page's versions as they stand, the actions, the Node version and `@configdirector/cli@beta`, and pin nothing else.
+The check runs from the directory that holds `configdirector.json`; when that is not the repository root, set the action's `working-directory` input to it, or the working directory of the step or job that runs the `npx` command. Copy the page's versions as they stand, the actions, the Node version and `@configdirector/cli`, and pin nothing else.
 
 ## 5. Scope the check
 

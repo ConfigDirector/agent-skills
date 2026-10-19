@@ -4,7 +4,7 @@ description: Change a ConfigDirector config's targeting rules in one environment
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.7.0
+  version: 0.8.0
 ---
 
 # Change targeting rules in one environment
@@ -26,7 +26,7 @@ List the environments: `list_environments` / `configdirector environments list -
 When a step fails, tell the user why, and go on only once it is fixed:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
-- Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli@beta` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
+- Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
 - The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
 - A permission is missing: on MCP, a tool missing from the list, such as `update_targeting_rules` without `Configs: Update targeting rules` or `list_segments` without `Segments: Read`, or a tool error naming the permission; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. Either message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `environments:read` is `Environments: Read`, `configs:read` is `Configs: Read`, `config-targeting-rules:update` is `Configs: Update targeting rules`, `segments:read` is `Segments: Read`, `contexts:read` is `Contexts: Read`), and that they can add it to the token on the **API tokens** page.

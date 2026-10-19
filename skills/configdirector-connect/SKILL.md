@@ -4,7 +4,7 @@ description: Set up and check this coding agent's access to ConfigDirector, thro
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.7.0
+  version: 0.8.0
 ---
 
 # Connect this agent to ConfigDirector
@@ -48,7 +48,7 @@ Ask the user whether their agent supports MCP servers. If it does, set up the MC
 
 ### CLI
 
-1. Tell the user to install `@configdirector/cli@beta` as the Install section of https://docs.configdirector.com/integrations/cli shows.
+1. Tell the user to install `@configdirector/cli` as the Install section of https://docs.configdirector.com/integrations/cli shows.
 2. Tell the user to run `configdirector login` in their own terminal, which hides the token while they paste it, once for each organization they work with: the CLI keeps one sign-in per organization, and signing in again to the same organization replaces its sign-in. An agent that works with one organization only can instead have `CONFIGDIRECTOR_TOKEN` set where it runs commands; the CLI uses that variable ahead of every sign-in, so with several organizations it stays unset there. Wait for them to say it is done.
 
 ## 4. Check with one read on MCP, two on the CLI
