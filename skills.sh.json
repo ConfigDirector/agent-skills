@@ -12,7 +12,8 @@
         "configdirector-use-configs-in-code",
         "configdirector-test-with-flags",
         "configdirector-validate-in-ci",
-        "configdirector-clean-up-flag"
+        "configdirector-clean-up-flag",
+        "configdirector-migrate-from-launchdarkly"
       ]
     },
     {
