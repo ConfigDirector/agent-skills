@@ -4,14 +4,14 @@ description: Change a ConfigDirector config's targeting rules in one environment
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.8.0
+  version: 0.9.0
 ---
 
 # Change targeting rules in one environment
 
 Work through the steps in order. The result is a new set of targeting rules for one config in one environment: the rules the environment has now, with the user's change applied, written once the user has seen the current and resulting rules side by side and said yes. For several environments, work through the steps once per environment.
 
-This skill changes targeting rules only, never a config's settings or a segment. To create a config, use `configdirector-create-config`.
+This skill changes targeting rules only, never a config's settings or a segment. To create a config, use `configdirector-create-config`; to create or change a segment, `configdirector-segments`.
 
 Changing targeting rules needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Update targeting rules`. Rules with a segment also need `Segments: Read`, and evaluating a saved context needs `Contexts: Read`.
 
@@ -38,7 +38,7 @@ Read all of this before composing a change. Never write a rule from memory.
 
 1. The config: `get_config` / `configdirector configs get <key> --json`. Its `targets` hold one entry per environment, and the entry whose `environment` is the one from step 1 is the current set: `defaultValue`, the default targeting rule value, and `rules`, in evaluation order. Note the config's current `key`, which the user may have named by an old one, its type and constraints, and an experiment's variations. When no config has the key (on MCP, an error saying so; on the CLI, exit 2 with `No config in <project> has the key`), list the configs with `list_configs` / `configdirector configs list --json` and ask which one the user means.
 2. The targeting rules reference, once per run: `get_targeting_rules_reference` / `configdirector targeting-rules reference --json`. It holds the JSON Schema of the rules, the condition kinds, the attributes a condition can test, the operators of each target type, of context kind conditions and of segment conditions, and notes on how values are written and rules are evaluated. Every condition, operator and value you write comes from it.
-3. The segments, when the change names one or a current rule uses one: `list_segments` / `configdirector segments list --json`, for each segment's `id` and name. When no segment has the name the user gave, say so and ask; this skill never creates a segment. Without `Segments: Read`, show a current segment condition by its segment ID and tell the user why; a segment the change names needs the permission to find its ID.
+3. The segments, when the change names one or a current rule uses one: `list_segments` / `configdirector segments list --json`, for each segment's `id` and name. When no segment has the name the user gave, say so and ask; this skill never creates a segment, `configdirector-segments` does. Without `Segments: Read`, show a current segment condition by its segment ID and tell the user why; a segment the change names needs the permission to find its ID.
 
 ## 3. Compose the change and confirm it
 

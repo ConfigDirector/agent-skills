@@ -4,6 +4,16 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-20
+
+### Added
+
+- The `configdirector-segments` skill, the third operator skill. It creates a segment or changes one from your description: who is in it, as condition groups where a context is in the segment when every condition of any one group matches, its name or key, and an environment override added, changed or removed. It reads the segment, the configs that use it and the targeting rules reference before composing anything, so every condition and operator it writes is one ConfigDirector takes, and keeps every condition you did not ask it to change. Before writing, it shows the current and the resulting definition side by side, for the project definition and each override the change touches, says in words which environments the change reaches, lists the configs that use the segment there, and waits for your yes; when one of those environments is live and a config uses the segment there, it tells you so, shows the change again and asks for an explicit yes. It ends by printing the previous definition, so you can put it back. When ConfigDirector refuses the segment, it shows the reasons, fixes the segment and asks again. It never deletes a segment: asked to, it shows the configs whose rules use it, names `configdirector-roll-out` to remove those segment conditions first, and gives you `configdirector segments delete` or the segment's page in the dashboard to run the delete yourself. It works through the ConfigDirector MCP server or the ConfigDirector CLI, with an API token that has `Projects: Read`, `Environments: Read` and `Segments: Read`, plus `Segments: Create` to create a segment and `Segments: Update` to change one. The CLI route needs `@configdirector/cli` 0.12.0 or later, and the skill asks you to install it again when it is older.
+
+### Changed
+
+- `configdirector-roll-out` names `configdirector-segments` as the way to create or change a segment, where it says it changes no segment and where no segment has the name you gave.
+
 ## [0.8.0] - 2026-10-19
 
 ### Changed
