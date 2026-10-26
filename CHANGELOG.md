@@ -4,6 +4,10 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-setup` reads the flag you name. Asked to add ConfigDirector and read a flag by its key, it looks the key up in your project, under current and old keys. When the project has it as a boolean flag, it evaluates that flag in your code and creates nothing; when the flag is not delivered to the kind of SDK it installed, client or server, it tells you so and names the config's **Settings** tab, where you change which SDKs receive it. When the project has the key with another type, it says so and asks whether to create a new boolean flag. When no config has the key, it proposes creating the flag with that key, with the same settings and confirmation as before. A request that names no flag still gets a proposed key.
+
 ## [0.10.0] - 2026-10-20
 
 ### Added

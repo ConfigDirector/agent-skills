@@ -1,6 +1,6 @@
 ---
 name: configdirector-setup
-description: Add ConfigDirector feature flags and remote config to the current project. Detects the framework, installs the matching ConfigDirector SDK or OpenFeature provider, wires it up with the SDK key from an environment variable, and evaluates a first feature flag. Use when the user asks to add ConfigDirector, feature flags, or remote config to their app.
+description: Add ConfigDirector feature flags and remote config to the current project. Detects the framework, installs the matching ConfigDirector SDK or OpenFeature provider, wires it up with the SDK key from an environment variable, and evaluates a new first feature flag or one the user names. Use when the user asks to add ConfigDirector, feature flags, or remote config to their app.
 license: MIT
 metadata:
   author: ConfigDirector
@@ -60,7 +60,7 @@ Fetch the docs page from the table and follow it for the install command, the in
 - Never write an SDK key into a tracked file. Server SDK keys are secrets.
 - Tell the user where to find the key: in the ConfigDirector dashboard, **SDK Keys**, pick the environment, and copy the client or server key the docs page calls for. SDK keys belong to one environment, so each deployment needs the key of its own environment.
 
-## 4. Create the first flag
+## 4. Find or create the first flag
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run. With the CLI, always pass `--json` and read the output, never the human text. Each item below names the MCP tool first and the CLI command second.
 
@@ -74,7 +74,11 @@ When an item fails, tell the user why. Where the case below says to run the comm
 - Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do.
 
 1. List the projects: `list_projects` / `configdirector projects list --json`. When the repository has `configdirector.json`, run `projects list` from the directory that holds it, and the project is the one whose slug is its `project`. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one this app belongs to. On the CLI route, then run `configdirector init --project <slug>` from the repository root, which writes `configdirector.json` so later CLI runs, such as `configdirector validate`, find the project. The MCP route writes no file. Run the CLI commands below from the directory that holds `configdirector.json`.
-2. Ask what the first flag should control, and propose a key in kebab case, for example `new-checkout-page`. Make sure no config has it as its `key` or among its `deprecatedKeys`: `list_configs` / `configdirector configs list --json`.
+2. Settle the key with `list_configs` / `configdirector configs list --json`, matching a key the user named against each config's `key` and its `deprecatedKeys[].key`; a match on an old key means that config under its current `key`. One of four cases applies:
+   - The request names no flag key: ask what the first flag should control, propose a key in kebab case, for example `new-checkout-page`, and make sure no config has it.
+   - It names a key no config has: the key is that one.
+   - It names a key a config has, and its `type` is `boolean`: tell the user the flag exists. When its `client` is `false` and the SDK from step 1 uses a client SDK key, or its `server` is `false` and that SDK uses a server SDK key, the flag is not delivered to that kind of SDK: say so, name the config's **Settings** tab in the dashboard, where the user can change which SDKs receive it, and stop. Otherwise skip items 3 and 4 and continue with step 5, Evaluate the flag in code, using its current key.
+   - It names a key a config has with another `type`: say so, with the type, and ask whether to create a new boolean flag, with a key you propose in kebab case that no config has, or to stop.
 3. Propose these settings and ask the user to confirm or change them before creating anything:
    - role: feature flag
    - lifetime: temporary
@@ -83,7 +87,7 @@ When an item fails, tell the user why. Where the case below says to run the comm
    - delivered to client SDKs, server SDKs, or both, matching the SDK from step 1
 4. After the user confirms, create it with those settings: `create_config` / `configdirector configs create --key <key> --type boolean --role flag --lifetime temporary --default-value false --json`, adding `--client-only` or `--server-only` when only one kind of SDK receives it. When the create reports the key taken (on the CLI, exit 1 with the config that has it), propose another key and confirm again.
 
-Fallback: tell the user to create a boolean feature flag in the dashboard with the proposed key and settings, then continue with step 5 using that key.
+Fallback: tell the user to create a boolean feature flag in the dashboard with the proposed key and settings, or, when they named a flag, to check in the dashboard that it is a boolean flag and that its **Settings** tab delivers it to the kind of SDK from step 1, then continue with step 5 using that key.
 
 ## 5. Evaluate the flag in code
 
@@ -92,5 +96,5 @@ Ask where the flag should take effect, then add the evaluation call from the doc
 ## 6. Check and hand over
 
 - Run the project's build, typecheck, or tests if it has them, and fix anything the change broke.
-- Summarize for the user: the SDK installed, the files changed, the environment variable to set and where to get its value, the flag created, and where the code evaluates it.
+- Summarize for the user: the SDK installed, the files changed, the environment variable to set and where to get its value, the flag created or the existing flag it reads, and where the code evaluates it.
 - Tell them how to see it work: set the SDK key, start the app, then turn the flag on for their environment, in the dashboard on the flag's **Targeting rules** tab (set the default targeting rule value to `true`), or by asking you to turn it on, which `configdirector-roll-out` does through the MCP server or the CLI.
