@@ -4,7 +4,7 @@ description: Create a ConfigDirector config of any role and type from a descript
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.10.0
+  version: 0.11.0
 ---
 
 # Create a config
