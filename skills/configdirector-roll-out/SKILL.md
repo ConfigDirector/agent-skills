@@ -15,22 +15,43 @@ This skill changes targeting rules only, never a config's settings or a segment.
 
 Changing targeting rules needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Update targeting rules`. Rules with a segment also need `Segments: Read`, and evaluating a saved context needs `Contexts: Read`.
 
-## 1. Reach the account, and find the project and the environment
+## 1. Reach the account, find the project, check the permissions and find the environment
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run. With the CLI, always pass `--json` and read the output, never the human text. Each step names the MCP tool first and the CLI command second.
 
 List the projects: `list_projects` / `configdirector projects list --json`. When the current repository has `configdirector.json`, the project is the one whose slug is its `project`, and every CLI command, `projects list` included, runs from the directory that holds the file. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one the config belongs to. Then pass `--project <slug>` to every CLI command below.
 
+Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
+
+| Permission                        | Short form                      | MCP tool                                                |
+| --------------------------------- | ------------------------------- | ------------------------------------------------------- |
+| `Projects: Read`                  | `projects:read`                 | `list_projects`                                         |
+| `Environments: Read`              | `environments:read`             | `list_environments`                                     |
+| `Configs: Read`                   | `configs:read`                  | `get_config`                                            |
+| `Configs: Update targeting rules` | `config-targeting-rules:update` | `update_targeting_rules`                                |
+| `Segments: Read`                  | `segments:read`                 | `list_segments`                                         |
+| `Contexts: Read`                  | `contexts:read`                 | none: only an evaluation of a saved context reports it |
+
+When `Projects: Read`, `Environments: Read`, `Configs: Read` or `Configs: Update targeting rules` is missing, stop and ask before proposing anything. When `Segments: Read` is missing, tell the user that a change naming a segment needs it, and go on; once the change names a segment, stop and ask before composing it. When the CLI lists no `Contexts: Read`, tell the user that evaluating a saved context needs it, and go on.
+
 List the environments: `list_environments` / `configdirector environments list --json`. The environment is the one the user named, by slug or name; when they named none, or the name fits none or several, ask, listing the slugs. Note whether its `live` is `true`: a live environment serves real traffic, and step 3 asks for an explicit yes before changing it.
 
-When a step fails, tell the user why, and go on only once it is fixed:
+When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
 - The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
-- A permission is missing: on MCP, a tool missing from the list, such as `update_targeting_rules` without `Configs: Update targeting rules` or `list_segments` without `Segments: Read`, or a tool error naming the permission; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. Either message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `environments:read` is `Environments: Read`, `configs:read` is `Configs: Read`, `config-targeting-rules:update` is `Configs: Update targeting rules`, `segments:read` is `Segments: Read`, `contexts:read` is `Contexts: Read`), and that they can add it to the token on the **API tokens** page.
-- Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
+- A permission is missing: on MCP, a tool of the table that you cannot see, or a tool error naming the permission; on the CLI, one the table lists that `permissions` lacks, or exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. A refusal names the permission in its short form. Tell the user which one in the dashboard's wording, from the table, and that they can add it to the token on the **API tokens** page.
+- Exit 2 with any other message, or any other tool error, such as a suspended service or an unreachable API: report the message, which says what to do.
+
+Stop and ask means: stop at once, before any other work, including work the user asked for outside this skill. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
+
+1. They fix it, as the case says, and you try again.
+2. They make the change in the dashboard, with the resulting rules you show them, and you go on.
+3. Only when the user's task has work left that does not need the change: you go on with that work without it, and the environment keeps its current rules. Run on its own, this skill offers the first two.
+
+Wait for their answer. On choice 2 before the rules are composed, compose them and show them as steps 2 and 3 do, skipping any read that fails, and write nothing.
 
 ## 2. Read the current rules and their format
 
@@ -73,7 +94,7 @@ After the yes, write the whole resulting set, `defaultValue` and every rule in o
 - MCP: `update_targeting_rules` with the project's ID, the config's current `key` as `configKey`, the environment's `id` as `environmentId`, `defaultValue` and `rules`.
 - CLI: write the resulting entry, `{"defaultValue": ..., "rules": [...]}`, to a new file in the operating system's temporary directory, never in the repository, run `configdirector targeting-rules set <key> --environment <slug> --rules <file> --json`, and delete the file once the command ends, whatever its outcome.
 
-When ConfigDirector refuses the rules, nothing changes: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons. Show the reasons, fix the rules against the reference, and return to step 3 to show them and confirm again. Read any other failure, such as a missing permission, as step 1 does.
+When ConfigDirector refuses the rules, nothing changes: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons. Show the reasons, fix the rules against the reference, and return to step 3 to show them and confirm again. Read any other failure, such as a missing permission, as step 1 does, and stop and ask.
 
 ## 5. Show what a context gets
 
@@ -82,12 +103,13 @@ When the user asks what a context now gets, evaluate the config in that environm
 - MCP: `evaluate_config` with the project's ID, the config's `key` as `configKey`, the environment's `id` as `environmentId`, and `context` with the `kind`, `identifier`, `name` and `traits` they give, or `savedContext` with a `kind` and an `identifier`.
 - CLI: `configdirector evaluate <key> --environment <slug> --json`, with `--context-id <identifier>`, `--context-kind <kind>`, `--context-name <name>` and, once per trait, `--context-trait <name>=<text>`, or `--context-trait <name>:=<json>` for a number, boolean, array or object; or `--context-json '<json>'`; or `--saved-context <kind>:<identifier>`.
 
-A saved context is one ConfigDirector stored from SDK evaluations in that environment, and needs `Contexts: Read`. Show the value served and the rule that served it, or the default targeting rule, as the evaluation reports them.
+A saved context is one ConfigDirector stored from SDK evaluations in that environment, and needs `Contexts: Read`. When the token lacks it, as step 1 found on the CLI, or the evaluation reports on MCP, say so before evaluating anything else, and ask whether they add it on the **API tokens** page for you to try again, or describe the context's kind, identifier and traits for you to evaluate instead, which needs no `Contexts: Read`. Show the value served and the rule that served it, or the default targeting rule, as the evaluation reports them.
 
 ## 6. Hand over
 
 In a few lines, tell the user:
 
+- first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
 - what was written: the resulting rules, in the sentences of step 3, and the config, environment and project;
 - that SDKs connected to that environment receive the new rules now, and the config's other environments are unchanged;
 - how to revert: run this skill again with the previous set. Print it as a JSON block of the `defaultValue` and `rules` step 2 read, so a later run can write it back as it was.

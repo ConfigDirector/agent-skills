@@ -15,20 +15,39 @@ This skill removes one temporary feature flag per run. A kill switch or a perman
 
 Cleaning up a flag needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Archive`.
 
-## 1. Reach the account and find the project
+## 1. Reach the account, find the project and check the permissions
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run, except `scan` in step 3, which exists only on the CLI. With the CLI, always pass `--json` and read the output, never the human text. Each step names the MCP tool first and the CLI command second.
 
 List the projects: `list_projects` / `configdirector projects list --json`. When the current repository has `configdirector.json`, the project is the one whose slug is its `project`, and every CLI command, `projects list` included, runs from the directory that holds the file. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one the flag belongs to. Then pass `--project <slug>` to every CLI command below.
 
-When a step fails, tell the user why, and go on only once it is fixed:
+Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
+
+| Permission           | Short form          | MCP tool            |
+| -------------------- | ------------------- | ------------------- |
+| `Projects: Read`     | `projects:read`     | `list_projects`     |
+| `Environments: Read` | `environments:read` | `list_environments` |
+| `Configs: Read`      | `configs:read`      | `get_config`        |
+| `Configs: Archive`   | `configs:archive`   | `archive_config`    |
+
+When `Projects: Read`, `Environments: Read` or `Configs: Read` is missing, stop and ask before proposing anything. When `Configs: Archive` is missing, tell the user that archiving the config at the end needs it, and go on; step 6 stops and asks before the archive.
+
+When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
 - The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
-- A permission is missing: on MCP, a tool missing from the list, such as `archive_config` without `Configs: Archive` or `list_environments` without `Environments: Read`, or a tool error naming the permission; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. Either message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `environments:read` is `Environments: Read`, `configs:read` is `Configs: Read`, `configs:archive` is `Configs: Archive`), and that they can add it to the token on the **API tokens** page.
-- Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
+- A permission is missing: on MCP, a tool of the table that you cannot see, or a tool error naming the permission; on the CLI, one the table lists that `permissions` lacks, or exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. A refusal names the permission in its short form. Tell the user which one in the dashboard's wording, from the table, and that they can add it to the token on the **API tokens** page.
+- Exit 2 with any other message, or any other tool error, such as a suspended service or an unreachable API: report the message, which says what to do.
+
+Stop and ask means: stop at once, before any other work, including work the user asked for outside this skill. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
+
+1. They fix it, as the case says, and you try again.
+2. They archive the config from the dashboard's Configs page, and you go on.
+3. They archive it later, as step 6 says, and you go on without archiving.
+
+Wait for their answer. Choices 2 and 3 apply at step 6 only: before it, the run needs the facts of step 2 to decide whether the flag can go, so the first is the only choice.
 
 ## 2. Read the facts and decide from the lifecycle state
 
@@ -78,7 +97,7 @@ Wait for the user's yes. Then make the edits, run the project's build, typecheck
 
 Ask whether the removal is deployed everywhere that read the flag; the SDKs and environments of step 2 say where that is. Advise waiting a day or two after that deploy before archiving, in case an application is rolled back to the version that still reads the key: that version would get its in-code default value instead of the value the flag served, which can be the other branch.
 
-On a yes, show the archive before doing it: the config's current key and project, that SDKs stop receiving the config and an application that still reads it gets its in-code default value and raises a Config not found alert, and that the dashboard restores it for 30 days with its targeting rules intact. Wait for the user's yes, then archive it by its current key: `archive_config` / `configdirector configs archive <key> --json`. On the CLI, exit 2 with `No config in <project> has the key` means the config is already archived or belongs to another project; on MCP, an error saying no config has the key means the same.
+On a yes, when `Configs: Archive` is missing, stop and ask as step 1 says. Otherwise show the archive before doing it: the config's current key and project, that SDKs stop receiving the config and an application that still reads it gets its in-code default value and raises a Config not found alert, and that the dashboard restores it for 30 days with its targeting rules intact. Wait for the user's yes, then archive it by its current key: `archive_config` / `configdirector configs archive <key> --json`. On the CLI, exit 2 with `No config in <project> has the key` means the config is already archived or belongs to another project; on MCP, an error saying no config has the key means the same. Read any other failure, such as a missing permission, as step 1 does, and stop and ask.
 
 On a no, or when the user wants to wait, end without archiving and tell them how to archive later: run this skill again, which finds no reference and goes straight to this step, or run `configdirector configs archive <key>`, call `archive_config`, or archive it from the dashboard's Configs page.
 
@@ -86,6 +105,7 @@ On a no, or when the user wants to wait, end without archiving and tell them how
 
 In a few lines, tell the user:
 
+- first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
 - the branch kept, and the files changed, with the tests removed or kept;
 - whether the config was archived, or is left to archive later and how;
 - that the dashboard restores an archived config for 30 days, after which it is deleted for good.

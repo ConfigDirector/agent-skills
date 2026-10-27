@@ -15,22 +15,42 @@ This skill changes segments only, never a config's targeting rules: to use a seg
 
 Creating a segment needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Segments: Read`, `Segments: Create`. Changing one needs `Segments: Update` in place of `Segments: Create`.
 
-## 1. Reach the account, and find the project and the environments
+## 1. Reach the account, find the project, check the permissions and find the environments
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run. With the CLI, always pass `--json` and read the output, never the human text. Each step names the MCP tool first and the CLI command second.
 
 List the projects: `list_projects` / `configdirector projects list --json`. When the current repository has `configdirector.json`, the project is the one whose slug is its `project`, and every CLI command, `projects list` included, runs from the directory that holds the file. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one the segment belongs to. Then pass `--project <slug>` to every CLI command below.
 
+Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
+
+| Permission           | Short form          | MCP tool            |
+| -------------------- | ------------------- | ------------------- |
+| `Projects: Read`     | `projects:read`     | `list_projects`     |
+| `Environments: Read` | `environments:read` | `list_environments` |
+| `Segments: Read`     | `segments:read`     | `list_segments`     |
+| `Segments: Create`   | `segments:create`   | `create_segment`    |
+| `Segments: Update`   | `segments:update`   | `update_segment`    |
+
+When `Projects: Read`, `Environments: Read` or `Segments: Read` is missing, or the one of `Segments: Create` and `Segments: Update` the request needs, stop and ask before proposing anything. A request that only asks which configs use a segment needs neither of those two.
+
 List the environments: `list_environments` / `configdirector environments list --json`, for each environment's `id`, which keys its override, its `slug`, which names it to the user, and `live`: a live environment serves real traffic, and step 4 asks for an explicit yes before a change reaches one where a config uses the segment.
 
-When a step fails, tell the user why, and go on only once it is fixed:
+When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
 - The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
-- A permission is missing: on MCP, a tool missing from the list, such as `create_segment` without `Segments: Create` or `update_segment` without `Segments: Update`, or a tool error naming the permission; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. Either message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `environments:read` is `Environments: Read`, `segments:read` is `Segments: Read`, `segments:create` is `Segments: Create`, `segments:update` is `Segments: Update`), and that they can add it to the token on the **API tokens** page.
-- Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
+- A permission is missing: on MCP, a tool of the table that you cannot see, or a tool error naming the permission; on the CLI, one the table lists that `permissions` lacks, or exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. A refusal names the permission in its short form. Tell the user which one in the dashboard's wording, from the table, and that they can add it to the token on the **API tokens** page.
+- Exit 2 with any other message, or any other tool error, such as a suspended service or an unreachable API: report the message, which says what to do.
+
+Stop and ask means: stop at once, before any other work, including work the user asked for outside this skill, such as the flags `configdirector-migrate-from-launchdarkly` creates after its segments. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
+
+1. They fix it, as the case says, and you try again.
+2. They make the change in the dashboard, with the resulting definition you show them, and you go on.
+3. Only when the user's task has work left that does not need the segment: you go on with that work without it, leaving the segment as it is, or uncreated. Run on its own, this skill offers the first two.
+
+Wait for their answer. On choice 2 before the segment is composed, compose it and show it as steps 2 to 4 do, skipping any read that fails, and write nothing.
 
 ## 2. Read the segment and its format
 
@@ -75,7 +95,7 @@ After the yes, write the segment once. Send `overrides` only when the change add
 - MCP: `create_segment` with the project's ID, `key`, `name`, `groups` and, for a new segment with one, `overrides`; or `update_segment` with the project's ID, the segment's current key as `segmentKey`, `key`, `name` and `groups`, the current values for the ones you keep, and `overrides` as above.
 - CLI: write the segment, `{"key": ..., "name": ..., "groups": [...]}` with `overrides` as above, to a new file in the operating system's temporary directory, never in the repository, run `configdirector segments create --segment <file> --json` or `configdirector segments update <key> --segment <file> --json`, and delete the file once the command ends, whatever its outcome.
 
-When ConfigDirector refuses the segment, nothing changes: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons, such as a key another segment has or a limit from step 2. Show the reasons, fix the segment against the reference, and return to step 4 to show it and confirm again. Read any other failure, such as a missing permission, as step 1 does.
+When ConfigDirector refuses the segment, nothing changes: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons, such as a key another segment has or a limit from step 2. Show the reasons, fix the segment against the reference, and return to step 4 to show it and confirm again. Read any other failure, such as a missing permission, as step 1 does, and stop and ask.
 
 ## 6. Hand a delete over
 
@@ -85,6 +105,7 @@ When the user asks to delete a segment, never delete it. Read it as step 2 does 
 
 In a few lines, tell the user:
 
+- first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
 - what was written: the segment's key and name, its project definition and each override, in the sentences of step 4, and the project;
 - that SDKs connected to the environments the change reaches use the new definition now, in every config whose rules use the segment, with those configs and the other environments unchanged;
 - that `configdirector-roll-out` uses the segment in a config's targeting rules, by name, in one environment at a time;

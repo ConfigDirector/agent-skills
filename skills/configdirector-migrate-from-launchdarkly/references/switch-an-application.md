@@ -34,6 +34,7 @@ Then run the project's build, typecheck and tests, and fix anything the change b
 
 In a few lines, tell the user:
 
+- first, anything they asked for in ConfigDirector that was not created or changed, such as a config stage 1 did not create that a rewritten read uses, and why, ahead of what was done;
 - the files changed, the reads rewritten, by file and line, the keys hardcoded and the tests updated;
 - the environment variable to set and where to get its value, for each environment the application is deployed to;
 - the findings of `validate` and the project's checks still open, if any;

@@ -76,7 +76,7 @@ After the yes, for each flag of the batch, create the config, then write every e
 - Create: `create_config` / `configdirector configs create --key <key> --type <type> --role <role> --lifetime <lifetime> --default-value <value> --json`, with the constraint, availability, description, tag and variation options as `configdirector-create-config` composes them. When the create still reports the key taken, because a config was created since the list was read, skip the flag and report it as above: on the CLI the create exits 1 with the config that has it; on MCP, an error that the key is in use.
 - Rules, for each mapped environment, with every rule, condition and percentage given a new random UUID as its `id` on MCP and no `id` on the CLI: `update_targeting_rules` with `configKey`, the environment's `id` as `environmentId`, `defaultValue` and `rules` / `configdirector targeting-rules set <key> --environment <slug> --rules <file> --json`, with the entry written to a new file in the operating system's temporary directory and deleted once the command ends. No separate yes is asked for a live environment: no application reads the new key until stage 2 is deployed.
 
-When ConfigDirector refuses a config or an environment's targeting rules, nothing is written for it: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons. Show the reasons, fix the config or the rules against the reference, show that flag again and go on after the user's yes. Read any other failure as `SKILL.md`'s access section does.
+When ConfigDirector refuses a config or an environment's targeting rules, nothing is written for it: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons. Show the reasons, fix the config or the rules against the reference, show that flag again and go on after the user's yes. Read any other failure, such as a missing permission, as `SKILL.md`'s access section does, and stop and ask.
 
 ## 6. Check the rules
 
@@ -88,6 +88,7 @@ Show, per config and environment, each context, the value served and the rule th
 
 In a few lines, tell the user:
 
+- first, the segments and configs not created and the rules not written because a write could not happen, and why, ahead of what was done;
 - the segments and configs created, with their keys, and the ones skipped because the project already had them;
 - the flags left out for hardcoding and the value each keeps, which stage 2 writes into the code;
 - the check's mismatches, if any, and the alternatives applied;

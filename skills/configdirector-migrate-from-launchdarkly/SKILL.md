@@ -22,20 +22,44 @@ Stage 1 needs an API token with these permissions, as the ConfigDirector dashboa
 
 At the start of every run, fetch https://docs.configdirector.com/migration-guides/launchdarkly and keep it open. Its tables are the mapping this skill follows: how projects, environments, flags, variations, lifetimes, keys, SDK availability and tags map; how a fallthrough, the on and off switch, individual targets, rules, operators, rollouts, segments and prerequisites map, and what has no equivalent; how a context, its kind, key, name, custom attributes and anonymous flag map; which ConfigDirector SDK replaces which LaunchDarkly SDK; and what to check once an application has switched. Never map a flag, a rule or an SDK call from memory: take every mapping from the guide as it reads on that day, and every condition and operator from the targeting rules reference, which stage 1 reads before composing any rule.
 
-## Reach the account
+## Reach the account and check the permissions
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run, except `configdirector validate` in stage 2, which exists only on the CLI. With the CLI, always pass `--json` and read the output, never the human text. Each step names the MCP tool first and the CLI command second.
 
 List the projects: `list_projects` / `configdirector projects list --json`. When the current repository has `configdirector.json`, the project is the one whose slug is its `project`, and every CLI command, `projects list` included, runs from the directory that holds the file. Otherwise it is the only project listed, or the one the user picks when there are several: ask which project the flags go to. Then pass `--project <slug>` to every CLI command below.
 
-When a step fails, tell the user why, and go on only once it is fixed:
+Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
+
+| Permission                        | Short form                      | MCP tool                 |
+| --------------------------------- | ------------------------------- | ------------------------ |
+| `Projects: Read`                  | `projects:read`                 | `list_projects`          |
+| `Environments: Read`              | `environments:read`             | `list_environments`      |
+| `Configs: Read`                   | `configs:read`                  | `list_configs`           |
+| `Configs: Create`                 | `configs:create`                | `create_config`          |
+| `Configs: Update targeting rules` | `config-targeting-rules:update` | `update_targeting_rules` |
+| `Segments: Read`                  | `segments:read`                 | `list_segments`          |
+| `Segments: Create`                | `segments:create`               | `create_segment`         |
+| `Tags: Read`                      | `tags:read`                     | `find_tag_by_name`       |
+| `Configs: Update settings`        | `config-settings:update`        | `update_config_settings` |
+
+When `Projects: Read` or `Configs: Read` is missing, stop and ask before proposing anything, and for stage 1 also when `Environments: Read`, `Configs: Create`, `Configs: Update targeting rules` or `Segments: Read` is missing. When `Segments: Create` is missing, tell the user that flags whose rules use a segment need it, and go on; once stage 1 finds such a flag, stop and ask before composing its segments. When `Tags: Read` or `Configs: Update settings` is missing, tell the user that flags with tags need it, and go on; once a chosen flag has tags, stop and ask before showing its batch.
+
+When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
 - The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
-- A permission is missing: on MCP, a tool missing from the list, such as `create_config` without `Configs: Create`, `update_targeting_rules` without `Configs: Update targeting rules` or `create_segment` without `Segments: Create`, or a tool error naming the permission; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. Either message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `environments:read` is `Environments: Read`, `configs:read` is `Configs: Read`, `configs:create` is `Configs: Create`, `config-targeting-rules:update` is `Configs: Update targeting rules`, `segments:read` is `Segments: Read`, `segments:create` is `Segments: Create`, `tags:read` is `Tags: Read`, `config-settings:update` is `Configs: Update settings`), and that they can add it to the token on the **API tokens** page.
-- Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
+- A permission is missing: on MCP, a tool of the table that you cannot see, or a tool error naming the permission; on the CLI, one the table lists that `permissions` lacks, or exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. A refusal names the permission in its short form. Tell the user which one in the dashboard's wording, from the table, and that they can add it to the token on the **API tokens** page.
+- Exit 2 with any other message, or any other tool error, such as a suspended service or an unreachable API: report the message, which says what to do.
+
+Stop and ask means: stop at once, before any other work, including the rest of this skill's stages and work the user asked for outside this skill. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
+
+1. They fix it, as the case says, and you try again.
+2. They make the change in the dashboard, with the settings you show them, and you go on.
+3. Only when the user's task has work left that does not need the change: you go on with that work without it, such as the remaining segments and flags, leaving out a flag whose rules use a segment not created, or stage 2, where the code reads a config not created with its in-code default value until it exists.
+
+Wait for their answer. On choice 2 or 3 before the settings are settled, settle them with the user as stage 1 does, skipping any read that fails, and create nothing.
 
 ## Read LaunchDarkly's data from the user's files
 

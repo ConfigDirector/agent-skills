@@ -15,20 +15,40 @@ To put a code change behind a new temporary boolean feature flag without tags, u
 
 Creating the config needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Configs: Read`, `Configs: Create`. A config with tags also needs `Tags: Read` and `Configs: Update settings`.
 
-## 1. Reach the account and find the project
+## 1. Reach the account, find the project and check the permissions
 
 Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected, and the `configdirector` CLI otherwise; never both in one run. With the CLI, always pass `--json` and read the output, never the human text. Each step names the MCP tool first and the CLI command second.
 
 List the projects: `list_projects` / `configdirector projects list --json`. When the current repository has `configdirector.json`, the project is the one whose slug is its `project`, and every CLI command, `projects list` included, runs from the directory that holds the file. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one the config belongs to. Then pass `--project <slug>` to every CLI command below.
 
-When a step fails, tell the user why, and go on only once it is fixed:
+Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
+
+| Permission                 | Short form               | MCP tool                 |
+| -------------------------- | ------------------------ | ------------------------ |
+| `Projects: Read`           | `projects:read`          | `list_projects`          |
+| `Configs: Read`            | `configs:read`           | `list_configs`           |
+| `Configs: Create`          | `configs:create`         | `create_config`          |
+| `Tags: Read`               | `tags:read`              | `find_tag_by_name`       |
+| `Configs: Update settings` | `config-settings:update` | `update_config_settings` |
+
+When `Projects: Read`, `Configs: Read` or `Configs: Create` is missing, stop and ask before proposing anything. When `Tags: Read` or `Configs: Update settings` is missing, tell the user that a config with tags needs it, and go on; once a tag is named, stop and ask before showing the settings.
+
+When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
 - The token belongs to another organization than the one `configdirector.json` names: the projects `list_projects` or `projects list` returns carry another `organizationId` than its `organization`, or a CLI command exits 2 with `The token from` and `belongs to the organization`. Tell the user so, and where the token came from: the MCP server's configuration, the source the CLI's message names, or else `CONFIGDIRECTOR_TOKEN` or `CONFIGDIRECTOR_ORGANIZATION` set where you run commands, which the CLI uses ahead of the repository's organization. Send them to `configdirector-connect`.
-- A permission is missing: on MCP, a tool missing from the list, such as `create_config` without `Configs: Create` or `find_tag_by_name` without `Tags: Read`, or a tool error naming the permission; on the CLI, exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. Either message names the permission in its short form. Tell the user which one in the dashboard's wording (`projects:read` is `Projects: Read`, `configs:read` is `Configs: Read`, `configs:create` is `Configs: Create`, `tags:read` is `Tags: Read`, `config-settings:update` is `Configs: Update settings`), and that they can add it to the token on the **API tokens** page.
-- Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
+- A permission is missing: on MCP, a tool of the table that you cannot see, or a tool error naming the permission; on the CLI, one the table lists that `permissions` lacks, or exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. A refusal names the permission in its short form. Tell the user which one in the dashboard's wording, from the table, and that they can add it to the token on the **API tokens** page.
+- Exit 2 with any other message, or any other tool error, such as a suspended service or an unreachable API: report the message, which says what to do.
+
+Stop and ask means: stop at once, before any other work, including work the user asked for outside this skill, such as code that reads the config. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
+
+1. They fix it, as the case says, and you try again.
+2. They make the change in the dashboard, with the settings you show them, and you go on.
+3. Only when the user's task has work left that does not need the config, such as code that reads it: you go on with that work without it, and the code reads its in-code default value until the config exists. Run on its own, this skill offers the first two.
+
+Wait for their answer. On choice 2 or 3 before the settings are settled, settle them with the user as step 2 does, skipping any read that fails, and create nothing.
 
 ## 2. Propose the config
 
@@ -94,12 +114,13 @@ When the create does not succeed, nothing is created. Tell the user what happene
 - The key is taken: on MCP, an error that the key is already in use, and `get_config` with the key returns the config that has it; on the CLI, exit 1 with that config. Show it, propose another key, and return to step 2.
 - A tag name no tag has: on MCP, `find_tag_by_name` finds no tag; on the CLI, exit 2 with `No tag in <project> has the name "<name>".` Report it, never create the tag, ask what to change, and return to step 2.
 - A setting is refused: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons, or with a message about one of the command's options, such as `--default-value takes a number with --type integer, not ten.` Show the reasons, ask what to change, and return to step 2.
-- Any other failure, such as a missing permission: read it as step 1 does.
+- Any other failure, such as a missing permission: read it as step 1 does, and stop and ask.
 
 ## 4. Hand over
 
 In a few lines, tell the user:
 
+- first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
 - what was created, with its settings as ConfigDirector returned them;
 - that every environment serves the default targeting rule value until its targeting rules change;
 - how to read it in code: `configdirector-use-configs-in-code` gives the rules, such as the type each SDK serves it as and what the in-code default value is for;

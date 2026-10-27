@@ -9,7 +9,7 @@ metadata:
 
 # Use configs in code
 
-Apply these rules whenever code reads a config or feature flag through a ConfigDirector SDK or OpenFeature provider: when writing such code, when reviewing it, and when asked to check how a project uses its configs. This skill touches no ConfigDirector account and needs no API token.
+Apply these rules whenever code reads a config or feature flag through a ConfigDirector SDK or OpenFeature provider: when writing such code, when reviewing it, and when asked to check how a project uses its configs. This skill needs no API token of its own and changes nothing in a ConfigDirector account; when the agent already reaches the account, it reads the project's configs with that access, to check a key before writing a read.
 
 ## 1. Find the SDK and its docs page
 
@@ -36,10 +36,15 @@ If no dependency matches, the project does not use ConfigDirector yet; `configdi
 ## 3. Writing code that reads a config
 
 1. Find where the project creates its client and how the code gets it (a module, a provider, a dependency injection container). Read the config through that, never through a new client.
-2. Take the evaluation call from the SDK page: the hook, composable, getter or method for the config's type, with the key as a literal or an existing constant and the safe value as the in-code default value.
-3. Run the project's typecheck or build, and `configdirector validate` when the CLI is installed and the repository holds a `configdirector.json` (the file `configdirector init` writes), from the directory that holds it. It checks every key and type against the project's configs and exits with 1 on a finding, or with 2 when it could not run, with a message that says why. Two of those messages need more:
+2. Before writing the read, check that the project has the config, whenever the agent already reaches the account: the ConfigDirector MCP tools are listed, or the repository holds a `configdirector.json`. The check reads with that access, which needs `Projects: Read` and `Configs: Read`: `list_projects`, for the project whose slug is `configdirector.json`'s `project`, or the only one listed, or the one the user picks, then `list_configs` / `configdirector configs list --json`, from the directory that holds `configdirector.json`. A config has the key when it is its `key` or among its `deprecatedKeys[].key`. A key another skill settled earlier in this task, created or left to create, is checked already.
+   - A config has it: read it by its current `key`.
+   - No config has it: tell the user before writing the read, name a config whose key is close to it if one is, and offer to create it, through `configdirector-flag-a-change` for a temporary boolean flag that wraps a change, and through `configdirector-create-config` otherwise. Those skills check the token's permissions first, and stop and ask when the config cannot be created. When the user would rather not create it, write the read.
+   - The check cannot run, because no route answers or the lookup fails, such as `configs list` exiting 2: write the read.
+3. Take the evaluation call from the SDK page: the hook, composable, getter or method for the config's type, with the key as a literal or an existing constant and the safe value as the in-code default value.
+4. Run the project's typecheck or build, and `configdirector validate` when the CLI is installed and the repository holds a `configdirector.json` (the file `configdirector init` writes), from the directory that holds it. It checks every key and type against the project's configs and exits with 1 on a finding, or with 2 when it could not run, with a message that says why. A finding on a read you just wrote, such as an unknown key, is a problem, which item 5 reports first. Two of the exit 2 messages need more:
    - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
    - Exit 2 with `The token from` and `belongs to the organization`: the token the CLI used belongs to another organization than the one `configdirector.json` names. Tell the user so, and where the token came from, as the message names it, such as `CONFIGDIRECTOR_TOKEN`. Send them to `configdirector-connect`.
+5. Open the hand-over with what is not in place, ahead of what was done: anything the user asked for in ConfigDirector that was not created or changed, and why; a config the read needs that the project does not have; "I couldn't check that this config exists", naming its key, when item 2's check could not run; and a finding of item 4 on a read you just wrote.
 
 ## 4. Reviewing code that reads configs
 
