@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-27
+
 ### Changed
 
 - `configdirector-create-config` creates a config with the tags you name, including ones your project does not have yet, and no longer asks for `Configs: Update settings` to tag a new config. It looks each name up and marks the ones your project lacks as new in the settings it shows you, such as `tags: checkout, payment-provider (new)`, so a misspelled name is caught before your yes. Once you confirm, it makes the new tags, through the MCP server's `create_tag` or the CLI's `configs create --new-tag`, and creates the config with all of them. Tagging a new config needs `Tags: Read` to find the tags your project already has and `Tags: Create` to make new ones, beside `Projects: Read`, `Configs: Read` and `Configs: Create`; without `Tags: Read`, every tag you name is made as a new one. When the config is not created after tags were made, the skill names those tags, which stay in your project's tag catalog. New tags on the CLI route need `@configdirector/cli` 0.13.0 or later, and the skill asks you to install it again when it is older.
