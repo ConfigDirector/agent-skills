@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-26
+
 ### Changed
 
 - The skills that create or change something in your ConfigDirector account, `setup`, `flag-a-change`, `create-config`, `roll-out`, `segments`, `clean-up-flag` and `migrate-from-launchdarkly`, stop and say so at once when they cannot. Each reads the token's permissions right after finding your project, before proposing anything: on the CLI with `configdirector api-token get`, and through the MCP server from the tools it offers. When a permission the run needs is missing, or a create or change fails because the token is rejected, belongs to another organization or ConfigDirector cannot be reached, the skill stops before any other work, including work you asked for outside it, such as code, tells you what was not created or changed and why, naming a missing permission as the **API tokens** page does, and asks how to go on: you fix it and it tries again, or you make the change in the dashboard with the settings it shows you. When your request has work left that does not need the change, such as code, it can also go on without it, and code that reads a config it could not create gets its in-code default value until the config exists. A permission only part of a run needs, such as `Tags: Read` for a config with tags or `Configs: Archive` at the end of a cleanup, is named at the start, and asked about once the run needs it. Every hand-over opens with anything you asked for in ConfigDirector that was not created or changed, and why.

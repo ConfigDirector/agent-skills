@@ -4,7 +4,7 @@ description: Add ConfigDirector feature flags and remote config to the current p
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.11.0
+  version: 0.12.0
 ---
 
 # Add ConfigDirector to this project
