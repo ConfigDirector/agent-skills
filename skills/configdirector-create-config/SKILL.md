@@ -13,7 +13,7 @@ Work through the steps in order. The result is a new config in the user's Config
 
 To put a code change behind a new temporary boolean feature flag without tags, use `configdirector-flag-a-change` instead, which also writes the code.
 
-Creating the config needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Configs: Read`, `Configs: Create`. A config with tags also needs `Tags: Read` and `Configs: Update settings`.
+Creating the config needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Configs: Read`, `Configs: Create`. A config with tags also needs `Tags: Read` to find the tags the project already has, and `Tags: Create` to make new ones.
 
 ## 1. Reach the account, find the project and check the permissions
 
@@ -23,15 +23,15 @@ List the projects: `list_projects` / `configdirector projects list --json`. When
 
 Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
 
-| Permission                 | Short form               | MCP tool                 |
-| -------------------------- | ------------------------ | ------------------------ |
-| `Projects: Read`           | `projects:read`          | `list_projects`          |
-| `Configs: Read`            | `configs:read`           | `list_configs`           |
-| `Configs: Create`          | `configs:create`         | `create_config`          |
-| `Tags: Read`               | `tags:read`              | `find_tag_by_name`       |
-| `Configs: Update settings` | `config-settings:update` | `update_config_settings` |
+| Permission        | Short form       | MCP tool           |
+| ----------------- | ---------------- | ------------------ |
+| `Projects: Read`  | `projects:read`  | `list_projects`    |
+| `Configs: Read`   | `configs:read`   | `list_configs`     |
+| `Configs: Create` | `configs:create` | `create_config`    |
+| `Tags: Read`      | `tags:read`      | `find_tag_by_name` |
+| `Tags: Create`    | `tags:create`    | `create_tag`       |
 
-When `Projects: Read`, `Configs: Read` or `Configs: Create` is missing, stop and ask before proposing anything. When `Tags: Read` or `Configs: Update settings` is missing, tell the user that a config with tags needs it, and go on; once a tag is named, stop and ask before showing the settings.
+When `Projects: Read`, `Configs: Read` or `Configs: Create` is missing, stop and ask before proposing anything. When `Tags: Read` is missing, tell the user that tags the project already has need it, and when `Tags: Create` is missing, that new tags need it, and go on; once a named tag needs a missing permission, stop and ask before showing the settings.
 
 When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
@@ -80,12 +80,12 @@ Read the user's description, and settle each setting below from it. When the des
    A timespan always needs its unit and both bounds, and an enum its values.
 
 4. Availability: client SDKs (browsers and mobile apps), server SDKs (backend services), or both. Take it from the description. When the description leaves it open and the code that will read the config is in the current repository, take it from the SDK that code uses, whose docs page `configdirector-use-configs-in-code` shows how to find; otherwise ask. On MCP it is `client` and `server`; on the CLI, `--client-only` or `--server-only`, and neither for both.
-5. Tags: only those the user names, by name. This skill never creates a tag.
+5. Tags: the tags the user names, by name. With `Tags: Read`, look each one up: `find_tag_by_name` / `configdirector configs list --tag <name> --json`, one name per command. A name no tag has is a new tag: on MCP, `No tag with name '<name>' exists in the project.`; on the CLI, exit 2 with `No tag in <project> has the name "<name>".` Without `Tags: Read`, every named tag is a new tag. Make only the new tags the user confirms.
 6. Variations, for an experiment of a type other than boolean: at least two, each with a short name, such as `control` or `treatment`, and a different value of the config's type. A boolean experiment's variations are `true` and `false`, so it takes none.
 7. Description: one sentence on what the config is for, from the user's words, as `description` / `--description`.
 8. Default targeting rule value: the value every environment serves until its targeting rules change, in the config's type, within its constraints, and one of the variations for an experiment. A feature flag starts at `false`, so nothing changes until it is turned on, and a kill switch at the value that keeps the feature running. For any other config, take it from the description.
 
-Show the user every setting in one block, and wait for their yes before creating anything. Say that the default targeting rule value applies in every environment of the project; do not list the environments. For example:
+Show the user every setting in one block, and wait for their yes before creating anything. Say that the default targeting rule value applies in every environment of the project; do not list the environments. Mark each new tag `(new)`, so a misspelled name is seen before the yes. For example:
 
 ```
 key: checkout-timeout
@@ -93,7 +93,7 @@ role: config
 lifetime: permanent
 type: timespan in seconds, from 1 to 120, whole seconds only
 availability: server SDKs
-tags: checkout
+tags: checkout, payment-provider (new)
 description: How long checkout waits for the payment provider before it gives up.
 default targeting rule value: 30, in every environment
 ```
@@ -104,24 +104,27 @@ When the user changes a setting, check it against the items above and show the b
 
 After the user's yes, create it with those settings:
 
-- MCP: resolve each tag name to its ID with `find_tag_by_name`, then call `create_config` with the project's ID, the settings, `tagIds`, `variations` and `defaultValue`. A JSON config's value goes as its JSON text.
-- CLI: `configdirector configs create --key <key> --type <type> --role <role> --lifetime <lifetime> --default-value <value> --json`, adding the constraint options from step 2, `--client-only` or `--server-only`, `--description <text>`, `--tag <name>` once per tag and `--variation <name>=<value>` once per variation.
+- MCP: take each existing tag's ID from `find_tag_by_name`, and make each new tag with `create_tag`, which returns its ID. Then call `create_config` with the project's ID, the settings, every tag's ID as `tagIds`, `variations` and `defaultValue`. A JSON config's value goes as its JSON text.
+- CLI: `configdirector configs create --key <key> --type <type> --role <role> --lifetime <lifetime> --default-value <value> --json`, adding the constraint options from step 2, `--client-only` or `--server-only`, `--description <text>`, `--tag <name>` once per existing tag, `--new-tag <name>` once per new tag and `--variation <name>=<value>` once per variation.
 
 On the CLI, a JSON Schema or a JSON default targeting rule value goes in a new file in the operating system's temporary directory, never in the repository: pass the schema as `--json-schema <file>` and the value as `--default-value @<file>`. Delete the files once the command ends, whatever its outcome.
 
-When the create does not succeed, nothing is created. Tell the user what happened:
+When the create does not succeed, no config is created. Tell the user what happened:
 
 - The key is taken: on MCP, an error that the key is already in use, and `get_config` with the key returns the config that has it; on the CLI, exit 1 with that config. Show it, propose another key, and return to step 2.
-- A tag name no tag has: on MCP, `find_tag_by_name` finds no tag; on the CLI, exit 2 with `No tag in <project> has the name "<name>".` Report it, never create the tag, ask what to change, and return to step 2.
+- A new tag has a name a tag already has: on MCP, `create_tag` rejects it with `A tag named "<name>" already exists.`; on the CLI, exit 2 with `The Admin API rejected the request:`, the same reason and `use --tag instead of --new-tag`. With `Tags: Read`, report it and return to step 2 with that tag as an existing one. Without it, stop and ask, with adding `Tags: Read` as the fix.
+- On the CLI, exit 2 with `unknown option '--new-tag'`: the installed CLI is older than `--new-tag`. Read it as step 1's `unknown command` case, and stop and ask.
 - A setting is refused: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons, or with a message about one of the command's options, such as `--default-value takes a number with --type integer, not ten.` Show the reasons, ask what to change, and return to step 2.
 - Any other failure, such as a missing permission: read it as step 1 does, and stop and ask.
+
+When new tags were made before the failure, the CLI names them on a line starting `Created the tag`. Tell the user which tags were made, that they stay in the project's tag catalog, and that a retry gives them as existing tags: on MCP by the IDs `create_tag` returned, on the CLI with `--tag`, which needs `Tags: Read`, so without it, stop and ask.
 
 ## 4. Hand over
 
 In a few lines, tell the user:
 
 - first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
-- what was created, with its settings as ConfigDirector returned them;
+- what was created: the config, with its settings as ConfigDirector returned them, and each new tag this run made;
 - that every environment serves the default targeting rule value until its targeting rules change;
 - how to read it in code: `configdirector-use-configs-in-code` gives the rules, such as the type each SDK serves it as and what the in-code default value is for;
 - how to change its targeting rules, one environment at a time: in the dashboard on the config's **Targeting rules** tab, or by asking you to, which `configdirector-roll-out` does through the MCP server or the CLI.

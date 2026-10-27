@@ -16,7 +16,7 @@ Work through the stages in order, each with the steps of its reference file. The
 
 Confirm with the user before every write to their ConfigDirector account and before editing any code. This skill changes nothing in LaunchDarkly, archives nothing there, and reads LaunchDarkly only through files the user exports, never through a LaunchDarkly token, SDK or MCP server. A segment or config key the ConfigDirector project already has is never changed.
 
-Stage 1 needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Create`, `Configs: Update targeting rules`, `Segments: Read`, `Segments: Create`. Flags with tags also need `Tags: Read` and `Configs: Update settings`. Stage 2 needs the same `Projects: Read` and `Configs: Read` for `configdirector validate`.
+Stage 1 needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Create`, `Configs: Update targeting rules`, `Segments: Read`, `Segments: Create`. Flags with tags also need `Tags: Read`. Stage 2 needs the same `Projects: Read` and `Configs: Read` for `configdirector validate`.
 
 ## Fetch the migration guide
 
@@ -40,9 +40,8 @@ Then read the token's permissions, before proposing anything. On MCP, they are t
 | `Segments: Read`                  | `segments:read`                 | `list_segments`          |
 | `Segments: Create`                | `segments:create`               | `create_segment`         |
 | `Tags: Read`                      | `tags:read`                     | `find_tag_by_name`       |
-| `Configs: Update settings`        | `config-settings:update`        | `update_config_settings` |
 
-When `Projects: Read` or `Configs: Read` is missing, stop and ask before proposing anything, and for stage 1 also when `Environments: Read`, `Configs: Create`, `Configs: Update targeting rules` or `Segments: Read` is missing. When `Segments: Create` is missing, tell the user that flags whose rules use a segment need it, and go on; once stage 1 finds such a flag, stop and ask before composing its segments. When `Tags: Read` or `Configs: Update settings` is missing, tell the user that flags with tags need it, and go on; once a chosen flag has tags, stop and ask before showing its batch.
+When `Projects: Read` or `Configs: Read` is missing, stop and ask before proposing anything, and for stage 1 also when `Environments: Read`, `Configs: Create`, `Configs: Update targeting rules` or `Segments: Read` is missing. When `Segments: Create` is missing, tell the user that flags whose rules use a segment need it, and go on; once stage 1 finds such a flag, stop and ask before composing its segments. When `Tags: Read` is missing, tell the user that flags with tags need it, and go on; once a chosen flag has tags, stop and ask before showing its batch.
 
 When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
