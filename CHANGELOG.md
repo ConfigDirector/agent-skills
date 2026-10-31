@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-30
+
 ### Changed
 
 - The skills never send a lifetime for a feature flag, kill switch or experiment, since ConfigDirector now gives each role its lifetime: a feature flag and an experiment are always temporary, a kill switch always permanent, and only a general config, of the config role, has the lifetime you choose. `configdirector-create-config` asks for the lifetime only for a general config, shows the lifetime of every other role next to it, such as `role: kill switch, always permanent`, and proposes a kill switch when you ask for a permanent feature flag and a feature flag when you ask for a temporary kill switch. `configdirector-setup` and `configdirector-flag-a-change` show the new flag as `role: feature flag, always temporary`. `configdirector-migrate-from-launchdarkly` recreates a LaunchDarkly boolean flag that is not temporary as a kill switch and a temporary one as a feature flag, and keeps LaunchDarkly's temporary setting only for a flag it recreates as a general config. On the CLI route these skills need `@configdirector/cli` 0.16.0 or later, which no longer asks for `--lifetime` for those roles, and ask you to install it again when it is older.

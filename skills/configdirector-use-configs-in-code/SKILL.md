@@ -4,7 +4,7 @@ description: Rules for code that reads a ConfigDirector config or feature flag t
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.13.0
+  version: 0.14.0
 ---
 
 # Use configs in code

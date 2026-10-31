@@ -4,7 +4,7 @@ description: Create a ConfigDirector segment or change one through the ConfigDir
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.13.0
+  version: 0.14.0
 ---
 
 # Create or change a segment

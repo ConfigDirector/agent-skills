@@ -4,7 +4,7 @@ description: Move a LaunchDarkly project's feature flags to ConfigDirector by fo
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.13.0
+  version: 0.14.0
 ---
 
 # Migrate from LaunchDarkly
