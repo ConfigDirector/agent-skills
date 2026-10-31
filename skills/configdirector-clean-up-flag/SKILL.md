@@ -59,7 +59,8 @@ Read all three before deciding anything:
 
 Then decide from the config, in this order, and stop where a line says so:
 
-- `role` is `kill-switch`, or `lifetime` is `permanent`: stop. Cleanup is for temporary feature flags, which ConfigDirector tracks until they are removed; a kill switch stays in the code, and a permanent config is read for good. Tell the user that the dashboard archives any config from its Configs page when they really mean to remove it.
+- `role` is `kill-switch`: stop. Cleanup is for temporary feature flags, which ConfigDirector tracks until they are removed, and a kill switch is permanent by its role: it stays in the code. When the team now means to remove it, `configdirector-create-config` updates its role to feature flag, and ConfigDirector tracks it from then on. The dashboard also archives any config from its Configs page when they really mean to remove it now.
+- `lifetime` is `permanent`: stop. Cleanup is for temporary configs, and a config's lifetime is the team's choice: this one is meant to be read for good. When the team now means to remove it, they update its lifetime to temporary with the **Edit lifetime** pencil on its **Settings** tab in the dashboard, and ConfigDirector tracks it from then on. The dashboard also archives any config from its Configs page when they really mean to remove it now.
 - `state` is `new` or `in-use`: stop, and show the facts: which environments evaluated the flag and whether each is live, when, from which SDKs, and the rules in each environment, in the sentences of item 1. The flag is still read, so removing it now would change what those applications do.
 - `state` is `settled`, `archive-ready` or `stale`: go on. A settled flag has served one value in every live environment for its role's horizon; an archive-ready one was in use or settled and has since gone quiet; a stale one was created more than 15 days ago and never evaluated.
 

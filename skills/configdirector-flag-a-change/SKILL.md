@@ -56,16 +56,15 @@ Wait for their answer. On choice 2 or 3 before the settings are settled, settle 
 4. Show the user the settings, and wait for their yes before creating anything:
    - key: the one from item 1
    - type: boolean
-   - role: feature flag
-   - lifetime: temporary, so ConfigDirector tracks it until it is removed
+   - role: feature flag, always temporary, so ConfigDirector tracks it until it is removed
    - default targeting rule value: `false` in every environment, so nothing changes for users until the flag is turned on
    - delivered to client SDKs, server SDKs, or both, from item 3
 
 ## 3. Create the flag
 
-After the user's yes, create it with those settings: `create_config` / `configdirector configs create --key <key> --type boolean --role flag --lifetime temporary --default-value false --json`, adding `--client-only` or `--server-only` when only one kind of SDK receives it.
+After the user's yes, create it with those settings: `create_config` / `configdirector configs create --key <key> --type boolean --role flag --default-value false --json`, adding `--client-only` or `--server-only` when only one kind of SDK receives it. The role makes the flag temporary, so the create sends no lifetime on either route.
 
-When the create reports the key taken (on the CLI, exit 1 with the config that has it), propose another key and return to step 2. Read any other failure, such as a missing permission, as step 1 does, and stop and ask.
+When the create reports the key taken (on the CLI, exit 1 with the config that has it), propose another key and return to step 2. On the CLI, exit 2 with `required option '--lifetime <lifetime>' not specified` means the installed CLI is older than this command: read it as step 1's `unknown command` case. Read any other failure, such as a missing permission, as step 1 does, and stop and ask.
 
 ## 4. Wrap the change
 

@@ -11,7 +11,7 @@ metadata:
 
 Work through the steps in order. The result is a new set of targeting rules for one config in one environment: the rules the environment has now, with the user's change applied, written once the user has seen the current and resulting rules side by side and said yes. For several environments, work through the steps once per environment.
 
-This skill changes targeting rules only, never a config's settings or a segment. To create a config, use `configdirector-create-config`; to create or change a segment, `configdirector-segments`.
+This skill changes targeting rules only, never a config's settings or a segment. To create a config, or to update a feature flag's role to kill switch or back, use `configdirector-create-config`; to create or change a segment, `configdirector-segments`.
 
 Changing targeting rules needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Update targeting rules`. Rules with a segment also need `Segments: Read`, and evaluating a saved context needs `Contexts: Read`.
 

@@ -89,12 +89,11 @@ When an item fails, tell the user why. The CLI sign-ins case runs the command ag
    - It names a key a config has, and its `type` is `boolean`: tell the user the flag exists. When its `client` is `false` and the SDK from step 1 uses a client SDK key, or its `server` is `false` and that SDK uses a server SDK key, the flag is not delivered to that kind of SDK: say so, name the config's **Settings** tab in the dashboard, where the user can change which SDKs receive it, and stop. Otherwise skip items 4 and 5 and continue with step 5, Evaluate the flag in code, using its current key.
    - It names a key a config has with another `type`: say so, with the type, and ask whether to create a new boolean flag, with a key you propose in kebab case that no config has, or to stop.
 4. Propose these settings and ask the user to confirm or change them before creating anything:
-   - role: feature flag
-   - lifetime: temporary
+   - role: feature flag, always temporary
    - type: boolean
    - default targeting rule value: `false`, so nothing changes for users until the flag is turned on
    - delivered to client SDKs, server SDKs, or both, matching the SDK from step 1
-5. After the user confirms, create it with those settings: `create_config` / `configdirector configs create --key <key> --type boolean --role flag --lifetime temporary --default-value false --json`, adding `--client-only` or `--server-only` when only one kind of SDK receives it. When the create reports the key taken (on the CLI, exit 1 with the config that has it), propose another key and confirm again. Read any other failure, such as a missing permission, as the cases above do, and stop and ask.
+5. After the user confirms, create it with those settings: `create_config` / `configdirector configs create --key <key> --type boolean --role flag --default-value false --json`, adding `--client-only` or `--server-only` when only one kind of SDK receives it. The role makes the flag temporary, so the create sends no lifetime on either route. When the create reports the key taken (on the CLI, exit 1 with the config that has it), propose another key and confirm again. On the CLI, exit 2 with `required option '--lifetime <lifetime>' not specified` means the installed CLI is older than this command: read it as the `unknown command` case above. Read any other failure, such as a missing permission, as the cases above do, and stop and ask.
 
 Stop and ask means: stop at once, before any other work, including the code of step 5 and work the user asked for outside this skill. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
 
