@@ -4,6 +4,10 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-roll-out` writes an experiment's values with the names of their variations in the current and resulting rules it shows before a change, as in `40% get control (Start free trial), 60% get treatment-a (Try it free for 14 days)`, the way `configdirector configs get` writes them from CLI 0.18.0. It reads each current value's variation from the variation id ConfigDirector now sends beside it.
+
 ## [0.14.0] - 2026-10-30
 
 ### Changed
