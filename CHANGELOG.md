@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-05
+
 ### Changed
 
 - `configdirector-clean-up-flag` removes a settled flag from your code as soon as you ask. Your request is the go-ahead: you review the diff, and nothing reaches production until you deploy. It no longer proposes the branch and waits for a yes, or lists each environment's rules and every reference and waits again, before it edits. It asks one question, which branch stays, with the value each environment serves, only when your live environments do not serve one value, when that value differs from the settled value ConfigDirector reports, or when the flag is stale, and edits nothing before your answer. Its hand-over is a few lines: the branch kept, the files changed and the checks run.
