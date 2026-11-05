@@ -4,6 +4,14 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-04
+
+### Changed
+
+- `configdirector-roll-out` ships an experiment's variation and stops its run through the MCP server's `ship_variation` and `stop_run` or the CLI's `configs ship` and `configs stop`, so the run ends as `shipped`, with the variation recorded, or as `stopped`. Writing the rules by hand ended it as `replaced`. The skill still shows the current and resulting rules side by side and waits for your yes, and in a live environment it asks for an explicit yes, since those tools and commands ask for no confirmation of their own. On any other change to an experiment's rules, it tells you what that does to the run: splitting traffic for the first time starts a run, and adding or removing a rollout or changing its shares ends the run as `replaced` and, unless no rollout remains, starts another, whose exposures count from zero.
+- `configdirector-roll-out` answers how an experiment is going, from the MCP server's `list_runs` or the CLI's `configs runs`. It tells you how many distinct contexts each variation reached, called exposures, against the share configured when the run started, whether the split matches those shares, and which evaluations were left out. It never names a winner, since ConfigDirector measures no results. A question like this needs only `Projects: Read`, `Environments: Read` and `Configs: Read`.
+- On the CLI route, shipping, stopping and asking how an experiment is going need `@configdirector/cli` 0.19.0 or later, and the skill asks you to install it again when it is older.
+
 ## [0.15.0] - 2026-11-03
 
 ### Changed
