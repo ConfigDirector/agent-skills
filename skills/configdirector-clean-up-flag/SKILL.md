@@ -1,6 +1,6 @@
 ---
 name: configdirector-clean-up-flag
-description: Remove a settled temporary ConfigDirector feature flag from the code, keeping the branch it serves, after reading its lifecycle state, its recent evaluations and every code reference through the ConfigDirector MCP server or CLI and configdirector scan, and archive the config only once the user confirms the removal is deployed. Use when the user asks to remove, retire or clean up a flag, or to hardcode its value.
+description: Remove a settled temporary ConfigDirector feature flag from the code on the user's request, keeping the branch it serves, after reading its lifecycle state, its recent evaluations and every code reference through the ConfigDirector MCP server or CLI and configdirector scan, asking only when those facts leave the user a decision. Use when the user asks to remove, retire or clean up a flag, or to hardcode its value.
 license: MIT
 metadata:
   author: ConfigDirector
@@ -9,11 +9,11 @@ metadata:
 
 # Remove a settled flag from the code
 
-Work through the steps in order. The result is the code without the flag: the branch the flag serves stays, the other branch, the evaluation and their tests go, and the config is archived only once the user confirms the removal is deployed everywhere that read it. Confirm with the user before editing anything and before archiving.
+Work through the steps in order. The result is the code without the flag: the branch the flag serves stays, and the other branch, the evaluation and their tests go. The user's request is the yes to edit the code: they review the diff, and nothing reaches production until they deploy. So edit without asking, and ask a question only where a step names one.
 
 This skill removes one temporary feature flag per run. A kill switch or a permanent config stops at step 2, and why a flag is still read is not answered here.
 
-Cleaning up a flag needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`, `Configs: Archive`.
+Cleaning up a flag only reads the user's ConfigDirector account, with an API token that has these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Environments: Read`, `Configs: Read`.
 
 ## 1. Reach the account, find the project and check the permissions
 
@@ -21,18 +21,17 @@ Use the ConfigDirector MCP tools when the ConfigDirector MCP server is connected
 
 List the projects: `list_projects` / `configdirector projects list --json`. When the current repository has `configdirector.json`, the project is the one whose slug is its `project`, and every CLI command, `projects list` included, runs from the directory that holds the file. Otherwise it is the only project listed, or the one the user picks when there are several: ask which one the flag belongs to. Then pass `--project <slug>` to every CLI command below.
 
-Then read the token's permissions, before proposing anything. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
+Then read the token's permissions. On MCP, they are the ConfigDirector tools you can see by name, loaded or not, since the server offers only the tools the token allows; on the CLI, `configdirector api-token get --json` lists them in short form in `permissions`. The table gives each permission in the dashboard's wording, its short form and the MCP tool that needs it:
 
 | Permission           | Short form          | MCP tool            |
 | -------------------- | ------------------- | ------------------- |
 | `Projects: Read`     | `projects:read`     | `list_projects`     |
 | `Environments: Read` | `environments:read` | `list_environments` |
 | `Configs: Read`      | `configs:read`      | `get_config`        |
-| `Configs: Archive`   | `configs:archive`   | `archive_config`    |
 
-When `Projects: Read`, `Environments: Read` or `Configs: Read` is missing, stop and ask before proposing anything. When `Configs: Archive` is missing, tell the user that archiving the config at the end needs it, and go on; step 6 stops and asks before the archive.
+When one is missing, stop and ask before reading anything else.
 
-When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
+When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means the run cannot read what it decides from, so stop and ask, with the case's fix:
 
 - No route answers: no ConfigDirector tool is available, and `configdirector` is not installed, or `projects list` exits 2 with `No API token found` or `No CLI sign-in is for the organization`, or with `The Admin API refused the request` and a code other than `INSUFFICIENT_PERMISSIONS`, such as `API_TOKEN_EXPIRED`. Send the user to `configdirector-connect` for a token with the permissions above.
 - Exit 2 with `unknown command`: the installed CLI is older than the commands this skill uses. Tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
@@ -41,19 +40,13 @@ When a step fails, tell the user why. The CLI sign-ins case runs the command aga
 - A permission is missing: on MCP, a tool of the table that you cannot see, or a tool error naming the permission; on the CLI, one the table lists that `permissions` lacks, or exit 2 with `The Admin API refused the request` and the code `INSUFFICIENT_PERMISSIONS`. A refusal names the permission in its short form. Tell the user which one in the dashboard's wording, from the table, and that they can add it to the token on the **API tokens** page.
 - Exit 2 with any other message, or any other tool error, such as a suspended service or an unreachable API: report the message, which says what to do.
 
-Stop and ask means: stop at once, before any other work, including work the user asked for outside this skill. Tell the user what was not created or changed and why, with a missing permission in the dashboard's wording, and ask how to go on:
-
-1. They fix it, as the case says, and you try again.
-2. They archive the config from the dashboard's Configs page, and you go on.
-3. They archive it later, as step 6 says, and you go on without archiving.
-
-Wait for their answer. Choices 2 and 3 apply at step 6 only: before it, the run needs the facts of step 2 to decide whether the flag can go, so the first is the only choice.
+Stop and ask means: stop at once, before any other work, including work the user asked for outside this skill, and edit nothing. Tell the user what could not be read and why, with a missing permission in the dashboard's wording, and ask them to fix it, as the case says. Wait for their answer, then try again: the run needs every read to decide whether the flag can go.
 
 ## 2. Read the facts and decide from the lifecycle state
 
 Read all three before deciding anything:
 
-1. The config: `get_config` / `configdirector configs get <key> --json`. Note its current `key`, which the user may have named by an old one, its old keys in `deprecatedKeys[].key`, its `role`, `lifetime` and `state`, and its `targets`, one entry per environment with `targets[].environment.slug` and `targets[].environment.live`, its `rules` and its `defaultValue`, the default targeting rule value. Write each environment's rules in one line per rule, as `configs get` writes them, with the default targeting rule value last, for example `production (live): 1. plan is one of pro, team: true; default targeting rule: true`. When no config has the key (on MCP, an error saying so; on the CLI, exit 2 with `No config in <project> has the key`), list the configs with `list_configs` / `configdirector configs list --json` and ask which one the user means.
+1. The config: `get_config` / `configdirector configs get <key> --json`. Note its current `key`, which the user may have named by an old one, its old keys in `deprecatedKeys[].key`, its `role`, `lifetime` and `state`, its `settledValue`, whether server SDKs and client SDKs receive it in `server` and `client`, and its `targets`, one entry per environment with `targets[].environment.slug` and `targets[].environment.live`, its `rules` and its `defaultValue`, the default targeting rule value. Where a step shows an environment's rules, write them in one line per rule, as `configs get` writes them, with the default targeting rule value last, for example `production (live): 1. plan is one of pro, team: true; default targeting rule: true`. When no config has the key (on MCP, an error saying so; on the CLI, exit 2 with `No config in <project> has the key`), list the configs with `list_configs` / `configdirector configs list --json` and ask which one the user means.
 2. The recent evaluations: `get_config_activity` / `configdirector configs activity <key> --json`. Each entry of `latestEvaluations` is the most recent evaluation from one environment, SDK key kind (`source`), SDK name and SDK version, with its `time`. An SDK listed here can belong to another application than the repository you are in.
 3. The environments: `list_environments` / `configdirector environments list --json`, for which ones are `live`. A live environment serves real traffic, and only live environments decide what the flag serves.
 
@@ -75,38 +68,40 @@ Collect every entry of `references` whose `key` is the config's current key or o
 
 Either kind has `test` `true` when it is a test client call or sits in a test file.
 
-The scan covers this repository only. When `dynamicReferences` is not empty, stop: list each one with its `file`, `line`, `call` and `argument`, and tell the user that an SDK call whose key the scan cannot know may read this flag, so it has to pass its key as a string or a constant before the cleanup can be trusted. When no reference to the key is listed, the code no longer reads it: say so and go to step 6.
+The scan covers this repository only.
+
+`dynamicReferences` lists the SDK calls whose key the scan could not read, each with its `file`, `line`, `sdk`, `call` and `argument`. Rule each one out, in this order:
+
+1. The calling SDK does not receive the config: `sdk` is a server SDK (`js-server`, `nuxt-server`, `nextjs-server`, `openfeature-node`, `java`, `openfeature-java`, `python`, `openfeature-python`, `dotnet`, `openfeature-dotnet`, `go` or `openfeature-go`) and the config's `server` is `false`, or `sdk` is a client SDK (`js-client`, `react`, `react-native`, `vue`, `nuxt-client`, `nextjs-client`, `openfeature-web`, `flutter`, `openfeature-flutter`, `swift`, `openfeature-swift`, `android` or `openfeature-android`) and the config's `client` is `false`. An `sdk` in neither list goes to rule 2.
+2. The code fixes the keys the call can read, and this flag's are not among them: read the call and follow `argument` to where the key comes from, through the callers when it is a parameter. The call is ruled out when every value the key can hold is written in the code, as a type union, a record or a list, and none is the config's current key or an old key.
+
+A call ruled out stays as it is. For the calls neither rule settles, ask once, naming only those calls, each with its `file`, `line`, `call` and `argument` and where its key comes from: whether it can read this flag, and when it can, what it should do once the flag is gone. Edit nothing before the answer.
+
+When no reference to the key is listed, the code no longer reads it: say so, and the run ends there.
 
 ## 4. Decide which branch stays
 
-For a settled flag, the branch that stays is the single value the live environments serve, read from the rules of each live environment's `targets` entry: its `defaultValue` when it has no rules, otherwise the value that every rule and the `defaultValue` serve. A percentage rule serves every value it splits over. ConfigDirector also reports the value as `settledValue`; when the two differ, or the live environments disagree, show the rules and ask. For an archive-ready flag, read it the same way, and when the live environments do not serve one value, the user picks. For a stale flag, the user picks. When the project has no live environment, read every environment.
+The branch that stays is the single value the live environments serve, read from the rules of each live environment's `targets` entry: its `defaultValue` when it has no rules, otherwise the value that every rule and the `defaultValue` serve. A percentage rule serves every value it splits over. When the project has no live environment, read every environment.
 
-Show each environment's rules in the sentences of step 2, then propose the branch, such as "Keep the `true` branch: production and staging both serve `true`", and wait for the user's yes.
+- A settled flag whose live environments serve one value, equal to the `settledValue` ConfigDirector reports: that branch stays. Go on without asking.
+- An archive-ready flag, which has no `settledValue`, whose live environments serve one value: that branch stays. Go on without asking.
+- Any other case, which is live environments that do not serve one value, a value that differs from `settledValue`, or a stale flag: ask one question, which branch stays, with the value each environment serves, such as `production (live): true`, or its rules in the sentences of step 2 when it serves several. Edit nothing before the answer.
 
-## 5. Show the change, then edit
+## 5. Edit the code
 
-Before editing, list every reference from step 3 and what happens to it:
+Edit every reference from step 3:
 
 - The evaluation is replaced by the kept branch: the SDK call, its in-code default value and the other branch go, and the kept branch's code stays as it was, without the condition.
 - The constant that holds the key is removed when nothing else reads it; a list of keys loses its entry; a wrapper or fixture loses its argument.
 - The test client entries for the key and the tests of the removed branch are removed, and the tests of the kept branch stay without the flag, following `configdirector-test-with-flags`.
 - The SDK client and its setup stay, whatever else reads them.
+- A call the user said in step 3 can read the flag changes as they answered.
 
-Wait for the user's yes. Then make the edits, run the project's build, typecheck and tests, and fix anything the change broke. Run `configdirector scan --json` again and confirm that no reference to the key or its old keys is listed.
+Then run the project's build, typecheck and tests, and fix anything the change broke. Run `configdirector scan --json` again and confirm that no reference to the key or its old keys is listed.
 
-## 6. The archive gate
-
-Ask whether the removal is deployed everywhere that read the flag; the SDKs and environments of step 2 say where that is. Advise waiting a day or two after that deploy before archiving, in case an application is rolled back to the version that still reads the key: that version would get its in-code default value instead of the value the flag served, which can be the other branch.
-
-On a yes, when `Configs: Archive` is missing, stop and ask as step 1 says. Otherwise show the archive before doing it: the config's current key and project, that SDKs stop receiving the config and an application that still reads it gets its in-code default value and raises a Config not found alert, and that the dashboard restores it for 30 days with its targeting rules intact. Wait for the user's yes, then archive it by its current key: `archive_config` / `configdirector configs archive <key> --json`. On the CLI, exit 2 with `No config in <project> has the key` means the config is already archived or belongs to another project; on MCP, an error saying no config has the key means the same. Read any other failure, such as a missing permission, as step 1 does, and stop and ask.
-
-On a no, or when the user wants to wait, end without archiving and tell them how to archive later: run this skill again, which finds no reference and goes straight to this step, or run `configdirector configs archive <key>`, call `archive_config`, or archive it from the dashboard's Configs page.
-
-## 7. Hand over
+## 6. Hand over
 
 In a few lines, tell the user:
 
-- first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
-- the branch kept, and the files changed, with the tests removed or kept;
-- whether the config was archived, or is left to archive later and how;
-- that the dashboard restores an archived config for 30 days, after which it is deleted for good.
+- the branch kept, the files changed, with the tests removed or kept, and the checks run;
+- in one line at most, the SDK calls step 3 ruled out.

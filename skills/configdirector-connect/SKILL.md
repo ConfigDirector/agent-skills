@@ -19,12 +19,11 @@ The token is the user's. Never ask for it, never read it from a file, never writ
 
 Ask what the user wants the agent to do with ConfigDirector, and name the permissions for it, in the dashboard's wording under **API tokens**:
 
-| The agent will                      | Permissions                                                                                                    |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Explore and answer questions        | `Projects: Read`, `Environments: Read`, `Configs: Read`                                                        |
-| Create and change configs and flags | the reading permissions, plus `Configs: Create`, `Configs: Update settings`, `Configs: Update targeting rules` |
-| Clean flags up                      | the changing permissions, plus `Configs: Archive`                                                              |
-| Work with segments                  | any of the rows above, plus `Segments: Read`                                                                   |
+| The agent will                                                   | Permissions                                                                                                    |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Explore, answer questions and remove settled flags from the code | `Projects: Read`, `Environments: Read`, `Configs: Read`                                                        |
+| Create and change configs and flags                              | the reading permissions, plus `Configs: Create`, `Configs: Update settings`, `Configs: Update targeting rules` |
+| Work with segments                                               | any of the rows above, plus `Segments: Read`                                                                   |
 
 Recommend an expiration on the token, as the MCP docs page does. How long is the user's choice.
 

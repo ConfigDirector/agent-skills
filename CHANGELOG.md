@@ -4,6 +4,15 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-clean-up-flag` removes a settled flag from your code as soon as you ask. Your request is the go-ahead: you review the diff, and nothing reaches production until you deploy. It no longer proposes the branch and waits for a yes, or lists each environment's rules and every reference and waits again, before it edits. It asks one question, which branch stays, with the value each environment serves, only when your live environments do not serve one value, when that value differs from the settled value ConfigDirector reports, or when the flag is stale, and edits nothing before your answer. Its hand-over is a few lines: the branch kept, the files changed and the checks run.
+- `configdirector-clean-up-flag` no longer archives the config, so it reads your account and changes nothing in it, and needs only `Projects: Read`, `Environments: Read` and `Configs: Read`, without `Configs: Archive`. A flag removed in the run is not deployed yet, so the archive could never follow in the same run. Archive the config yourself once the removal is deployed, from the dashboard's Configs page or with `configdirector configs archive`. `configdirector-connect` names the three read permissions for removing settled flags.
+
+### Fixed
+
+- `configdirector-clean-up-flag` no longer stops whenever `configdirector scan` lists an SDK call whose key it could not read, which stopped every cleanup in a repository with one such call. It rules a call out when the SDK that makes it does not receive the flag, such as a server SDK call and a flag only client SDKs receive, or when your code fixes every key the call can read and the flag's key is not among them. Only a call neither rules out gets a question, which names that call alone. A call it rules out stays as it is, and gets one line at most in the hand-over.
+
 ## [0.16.0] - 2026-11-04
 
 ### Changed
