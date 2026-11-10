@@ -24,6 +24,7 @@ Ask what the user wants the agent to do with ConfigDirector, and name the permis
 | Explore, answer questions and remove settled flags from the code | `Projects: Read`, `Environments: Read`, `Configs: Read`                                                        |
 | Create and change configs and flags                              | the reading permissions, plus `Configs: Create`, `Configs: Update settings`, `Configs: Update targeting rules` |
 | Work with segments                                               | any of the rows above, plus `Segments: Read`                                                                   |
+| Measure experiments with metrics                                 | any of the rows above, plus `Metrics: Read`, and `Metrics: Create` to define new metrics                       |
 
 Recommend an expiration on the token, as the MCP docs page does. How long is the user's choice.
 

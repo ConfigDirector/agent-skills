@@ -4,6 +4,18 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-roll-out` reports an experiment's results when you ask how it is going: for each metric the experiment measures, each variation against the control, with the lift and the range it is likely in, the chance to beat control, and the verdict, likely better, likely worse or no clear difference. It starts with any guardrail that is likely worse for a variation, then gives the primary metric's verdict, says when a rollout needs more exposures before its variations can be compared, and leaves what to ship to you. It also gives the run's hypothesis and the note it ended with, and the events your application sent that no metric measures.
+- `configdirector-roll-out` gives you, before you ship a variation, every guardrail likely worse for it and the primary metric's verdict for it.
+- `configdirector-roll-out` keeps the reason you give for shipping or stopping a run as the run's note. Notes need `@configdirector/cli` 0.21.0 or later on the CLI route.
+- `configdirector-create-config` attaches the metrics an experiment measures, and its hypothesis, when you describe them. It finds the metrics your project already has by their event name, proposes the kinds and direction of a new one and marks it new, and shows each metric's role, and the kind the primary metric decides on, with the other settings. Once you confirm, it creates the new metrics and the experiment, with its hypothesis, and attaches the metrics. Metrics can only be attached to experiments, so for any other config it tells you so and creates the config without them. This needs `Metrics: Read`, `Metrics: Create` for a new metric and, through the MCP server, `Configs: Update settings` to attach them. The CLI has no command that attaches metrics, so through the CLI the skill shows you the metrics to attach on the experiment's **Settings** tab once it exists. Metrics and the hypothesis need `@configdirector/cli` 0.21.0 or later on the CLI route.
+- `configdirector-connect` names `Metrics: Read`, and `Metrics: Create` to define new metrics, for a token that measures experiments.
+
+### Fixed
+
+- `configdirector-roll-out` describes the evaluations a run leaves out of its exposures as coming from anonymous contexts: in a server SDK, a context without an identifier skips the split and gets the default targeting rule value, and any other anonymous context sees its share of the split without being counted. It said every such evaluation was served the default targeting rule value.
+
 ## [0.17.0] - 2026-11-05
 
 ### Changed

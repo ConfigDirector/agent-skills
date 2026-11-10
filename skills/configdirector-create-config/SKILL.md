@@ -13,7 +13,7 @@ Work through the steps in order. The result is a new config in the user's Config
 
 To put a code change behind a new temporary boolean feature flag without tags, use `configdirector-flag-a-change` instead, which also writes the code. To update a feature flag's role to kill switch, or a kill switch's to feature flag, do step 1, then follow [Update a role](#update-a-role) in place of steps 2 to 4.
 
-Creating the config needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Configs: Read`, `Configs: Create`. A config with tags also needs `Tags: Read` to find the tags the project already has, and `Tags: Create` to make new ones. Updating a role through the MCP server needs `Configs: Update settings` in place of `Configs: Create`.
+Creating the config needs an API token with these permissions, as the ConfigDirector dashboard names them under **API tokens**: `Projects: Read`, `Configs: Read`, `Configs: Create`. A config with tags also needs `Tags: Read` to find the tags the project already has, and `Tags: Create` to make new ones. An experiment with metrics also needs `Metrics: Read` to find the metrics the project already has, `Metrics: Create` to make new ones, and, through the MCP server, `Configs: Update settings` to attach them. Updating a role through the MCP server needs `Configs: Update settings` in place of `Configs: Create`.
 
 ## 1. Reach the account, find the project and check the permissions
 
@@ -30,9 +30,11 @@ Then read the token's permissions, before proposing anything. On MCP, they are t
 | `Configs: Create`          | `configs:create`         | `create_config`          |
 | `Tags: Read`               | `tags:read`              | `find_tag_by_name`       |
 | `Tags: Create`             | `tags:create`            | `create_tag`             |
+| `Metrics: Read`            | `metrics:read`           | `list_metrics`           |
+| `Metrics: Create`          | `metrics:create`         | `create_metric`          |
 | `Configs: Update settings` | `config-settings:update` | `update_config_settings` |
 
-When `Projects: Read` or `Configs: Read` is missing, or `Configs: Create` for a new config, or `Configs: Update settings` for a role update on MCP, stop and ask before proposing anything. When `Tags: Read` is missing, tell the user that tags the project already has need it, and when `Tags: Create` is missing, that new tags need it, and go on; once a named tag needs a missing permission, stop and ask before showing the settings.
+When `Projects: Read` or `Configs: Read` is missing, or `Configs: Create` for a new config, or `Configs: Update settings` for a role update on MCP, stop and ask before proposing anything. When `Tags: Read` is missing, tell the user that tags the project already has need it, and when `Tags: Create` is missing, that new tags need it, and go on; once a named tag needs a missing permission, stop and ask before showing the settings. Metrics work the same way: `Metrics: Read` for the metrics the project already has, `Metrics: Create` for new ones, and on MCP `Configs: Update settings` to attach them; once a metric the user names needs a missing permission, stop and ask before showing the settings.
 
 When a step fails, tell the user why. The CLI sign-ins case runs the command again; every other case means nothing can be created or changed, so stop and ask, with the case's fix as the first choice:
 
@@ -85,8 +87,16 @@ Read the user's description, and settle each setting below from it. When the des
 6. Variations, for an experiment of a type other than boolean: at least two, each with a short name, such as `control` or `treatment`, and a different value of the config's type. A boolean experiment's variations are `true` and `false`, so it takes none.
 7. Description: one sentence on what the config is for, from the user's words, as `description` / `--description`.
 8. Default targeting rule value: the value every environment serves until its targeting rules change, in the config's type, within its constraints, and one of the variations for an experiment. A feature flag starts at `false`, so nothing changes until it is turned on, and a kill switch at the value that keeps the feature running. For any other config, take it from the description.
+9. Hypothesis, for an experiment whose description says what the team expects: that expectation in the user's words, such as `Urgency copy raises checkout completion by 5%`, up to 1,000 characters, as `hypothesis` / `--hypothesis`. Each run keeps the hypothesis it started with. Leave it out when the description gives none.
+10. Metrics, for an experiment whose description names what it measures. A metric is an event name the application sends with the SDK's `track` call, attached with a role: `primary`, the one metric whose kind decides the experiment; `secondary`, supporting evidence; or `guardrail`, a metric that must not get worse. An experiment has at most 10 metrics.
 
-Show the user every setting in one block, and wait for their yes before creating anything. Say that the default targeting rule value applies in every environment of the project; do not list the environments. Mark each new tag `(new)`, so a misspelled name is seen before the yes. Give the config role a `lifetime` line, the choice the user confirms, and write any other role's lifetime on its role line, such as `role: kill switch, always permanent`. For example:
+   - Only an experiment has metrics: when the description names metrics for a config of another role, tell the user metrics can only be attached to experiments, and settle the other settings without them.
+   - Look each event name up: `list_metrics` with `eventName`, which returns no metric when none has it / `configdirector metrics get <event name> --json`, which exits 2 with `No metric in <project> has the event name`. An existing metric brings its `kinds` and `direction`.
+   - An event name no metric has is a new metric. Settle its kinds: `conversion`, the share of exposed contexts that sent the event at least once; `count-per-context`, how many times each sent it, on average; or `value-per-context`, the value sent with the event per context, on average. Settle its direction: `higher-is-better`, or `lower-is-better` for an event the team wants less of, such as an error or a support ticket. Propose `conversion` and the direction the event's meaning gives, and ask when it gives none.
+   - The primary metric decides on one of its kinds, its `primaryKind`. When the description leaves the primary open, propose the metric the hypothesis is about, and ask when there is none.
+   - The CLI has no command that attaches metrics: on the CLI, the user attaches them on the experiment's **Settings** tab in the dashboard once it exists.
+
+Show the user every setting in one block, and wait for their yes before creating anything. Say that the default targeting rule value applies in every environment of the project; do not list the environments. Mark each new tag `(new)`, and each new metric `(new)` with its kinds and direction, so a misspelled name is seen before the yes. On the CLI, say that the metrics are attached on the experiment's **Settings** tab once it exists. Give the config role a `lifetime` line, the choice the user confirms, and write any other role's lifetime on its role line, such as `role: kill switch, always permanent`. For example:
 
 ```
 key: checkout-timeout
@@ -99,33 +109,50 @@ description: How long checkout waits for the payment provider before it gives up
 default targeting rule value: 30, in every environment
 ```
 
+For an experiment with metrics:
+
+```
+key: checkout-cta-copy
+role: experiment, always temporary
+type: string
+variations: control = Start free trial, treatment-a = Try it free for 14 days
+availability: client SDKs
+description: The call to action on the checkout page.
+hypothesis: Urgency copy raises checkout completion by 5%
+metrics: checkout_completed, primary on conversion; support_ticket_opened (new: count per context, lower is better), guardrail
+default targeting rule value: control (Start free trial), in every environment
+```
+
 When the user changes a setting, check it against the items above and show the block again.
 
 ## 3. Create the config
 
 After the user's yes, create it with those settings:
 
-- MCP: take each existing tag's ID from `find_tag_by_name`, and make each new tag with `create_tag`, which returns its ID. Then call `create_config` with the project's ID, the settings, `lifetime` for the config role only, every tag's ID as `tagIds`, `variations` and `defaultValue`. A JSON config's value goes as its JSON text.
-- CLI: `configdirector configs create --key <key> --type <type> --role <role> --default-value <value> --json`, adding `--lifetime <lifetime>` for the config role only, the constraint options from step 2, `--client-only` or `--server-only`, `--description <text>`, `--tag <name>` once per existing tag, `--new-tag <name>` once per new tag and `--variation <name>=<value>` once per variation.
+- MCP: take each existing tag's ID from `find_tag_by_name`, and make each new tag with `create_tag`, which returns its ID. Make each new metric with `create_metric`, with its `eventName`, `kinds` and `direction`, which returns its `id`; an existing metric's `id` comes from `list_metrics`. Then call `create_config` with the project's ID, the settings, `lifetime` for the config role only, every tag's ID as `tagIds`, `variations`, `hypothesis` and `defaultValue`. A JSON config's value goes as its JSON text. For an experiment with metrics, attach them next: `update_config_settings` with the project's ID, the config's `key` as `configKey`, and `metrics`, each `{ metricId, role, primaryKind }`, with `primaryKind` on the primary metric only.
+- CLI: make each new metric first, with `configdirector metrics create --event-name <event name> --kind <kind> --direction <direction> --json`, one `--kind` per kind. Then run `configdirector configs create --key <key> --type <type> --role <role> --default-value <value> --json`, adding `--lifetime <lifetime>` for the config role only, the constraint options from step 2, `--client-only` or `--server-only`, `--description <text>`, `--tag <name>` once per existing tag, `--new-tag <name>` once per new tag, `--variation <name>=<value>` once per variation and `--hypothesis <text>`.
 
 On the CLI, a JSON Schema or a JSON default targeting rule value goes in a new file in the operating system's temporary directory, never in the repository: pass the schema as `--json-schema <file>` and the value as `--default-value @<file>`. Delete the files once the command ends, whatever its outcome.
 
-When the create does not succeed, no config is created. Tell the user what happened:
+When the create does not succeed, no config is created, except when attaching its metrics fails. Tell the user what happened:
 
 - The key is taken: on MCP, an error that the key is already in use, and `get_config` with the key returns the config that has it; on the CLI, exit 1 with that config. Show it, propose another key, and return to step 2.
 - A new tag has a name a tag already has: on MCP, `create_tag` rejects it with `A tag named "<name>" already exists.`; on the CLI, exit 2 with `The Admin API rejected the request:`, the same reason and `use --tag instead of --new-tag`. With `Tags: Read`, report it and return to step 2 with that tag as an existing one. Without it, stop and ask, with adding `Tags: Read` as the fix.
-- On the CLI, exit 2 with `unknown option '--new-tag'`, or with `required option '--lifetime <lifetime>' not specified` for a role other than config: the installed CLI is older than the command this step runs. Read it as step 1's `unknown command` case, and stop and ask.
+- On the CLI, exit 2 with `unknown option '--new-tag'` or `unknown option '--hypothesis'`, or with `required option '--lifetime <lifetime>' not specified` for a role other than config: the installed CLI is older than the command this step runs. Read it as step 1's `unknown command` case, and stop and ask.
 - A setting is refused: on MCP, a tool error listing the reasons; on the CLI, exit 2 with `The Admin API rejected the request:` and the reasons, or with a message about one of the command's options, such as `--default-value takes a number with --type integer, not ten.` Show the reasons, ask what to change, and return to step 2.
+- A new metric is refused with `The project already has a metric for this event name`, because one was made since step 2: read it with `list_metrics` / `configdirector metrics get <event name> --json`, and go on with it as an existing metric.
+- Attaching the metrics is refused after the config was created: the config exists without metrics. Show the reasons, tell the user the config was created, and stop and ask: they fix what the reasons name and you attach again with `update_config_settings`, or they attach the metrics on the experiment's **Settings** tab.
 - Any other failure, such as a missing permission: read it as step 1 does, and stop and ask.
 
-When new tags were made before the failure, the CLI names them on a line starting `Created the tag`. Tell the user which tags were made, that they stay in the project's tag catalog, and that a retry gives them as existing tags: on MCP by the IDs `create_tag` returned, on the CLI with `--tag`, which needs `Tags: Read`, so without it, stop and ask.
+New metrics made before a failure stay in the project, and a retry finds them as existing metrics. When new tags were made before the failure, the CLI names them on a line starting `Created the tag`. Tell the user which tags were made, that they stay in the project's tag catalog, and that a retry gives them as existing tags: on MCP by the IDs `create_tag` returned, on the CLI with `--tag`, which needs `Tags: Read`, so without it, stop and ask.
 
 ## 4. Hand over
 
 In a few lines, tell the user:
 
 - first, anything they asked for in ConfigDirector that was not created or changed, and why, ahead of what was done;
-- what was created: the config, with its settings as ConfigDirector returned them, and each new tag this run made;
+- what was created: the config, with its settings as ConfigDirector returned them, and each new tag and metric this run made;
+- for an experiment with metrics: on MCP, the metrics attached with their roles; on the CLI, the metrics to attach on the experiment's **Settings** tab in the dashboard, each with its role and the primary's kind. Once a run has exposures, `configdirector-roll-out` reports how the experiment is going;
 - that every environment serves the default targeting rule value until its targeting rules change;
 - how to read it in code: `configdirector-use-configs-in-code` gives the rules, such as the type each SDK serves it as and what the in-code default value is for;
 - how to change its targeting rules, one environment at a time: in the dashboard on the config's **Targeting rules** tab, or by asking you to, which `configdirector-roll-out` does through the MCP server or the CLI.
