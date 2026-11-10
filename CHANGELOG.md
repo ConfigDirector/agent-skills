@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-10
+
 ### Changed
 
 - `configdirector-roll-out` reports an experiment's results when you ask how it is going: for each metric the experiment measures, each variation against the control, with the lift and the range it is likely in, the chance to beat control, and the verdict, likely better, likely worse or no clear difference. It starts with any guardrail that is likely worse for a variation, then gives the primary metric's verdict, says when a rollout needs more exposures before its variations can be compared, and leaves what to ship to you. It also gives the run's hypothesis and the note it ended with, and the events your application sent that no metric measures.
