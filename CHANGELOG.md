@@ -4,6 +4,16 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-roll-out` tells you how much longer an experiment's run needs when you ask. For a real lift of 2%, 5%, 10%, 20% and 50% on the primary metric, it gives the exposures so far against those needed before a variation with that lift has a good chance of reading likely better, and about how many more days that takes at the run's recent pace. It gives the days as the least the run needs, never as a date the run will end, and reminds you that a run should cover at least one full week. It also gives this after the results when you ask how an experiment is going and no variation shows a clear difference on the primary metric. It reads the estimate from the MCP server's `list_runs` or the CLI's `configs runs`, so it needs no newer `@configdirector/cli`.
+
+### Fixed
+
+- `configdirector-migrate-from-launchdarkly` replaces each LaunchDarkly `track` call with ConfigDirector's `track`, as the migration guide's **Move your experiments** section shows: the same event name, LaunchDarkly's `metricValue` as the event's `value`, and its `data` as the event's `details`. It used to remove the `track` calls and add none, so the events your experiments measure never reached ConfigDirector. The plan it shows before editing lists the `track` calls next to the reads, and an application on OpenFeature keeps its tracking calls. While a read stays on the LaunchDarkly SDK, each LaunchDarkly `track` call stays beside ConfigDirector's, so an experiment still running in LaunchDarkly keeps receiving its events.
+- `configdirector-migrate-from-launchdarkly` creates an experiment for each flag that runs one, boolean flags included, and finds experiments made with LaunchDarkly's current Experimentation, from a fourth request you run for each environment. It used to recognize only LaunchDarkly's legacy experiments, and only on string or number flags. When the largest shares of the production split tie, as in an even split, LaunchDarkly's control becomes the default variation. A JSON flag that runs an experiment becomes a config, and the preview says why. The skill leaves the experiment's split out, since saving it starts a run: the preview names the split, and the hand-over points you to the guide's steps for the metrics, the hypothesis and the run. A rollout that lists a variation more than once, as an experiment's can, now gives that variation the sum of its weights.
+- `configdirector-migrate-from-launchdarkly` proposes to move a flag later when its experiment still runs in LaunchDarkly, so you can read the result there first, as the guide advises, and keeps that flag's reads on the LaunchDarkly SDK. Running the skill again moves the flag once the experiment is stopped.
+
 ## [0.18.0] - 2026-11-10
 
 ### Changed

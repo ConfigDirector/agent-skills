@@ -1,6 +1,6 @@
 ---
 name: configdirector-roll-out
-description: Change a ConfigDirector config's targeting rules in one environment through the ConfigDirector MCP server or CLI, such as turning a flag on or off, a percentage rollout, rules for specific users, contexts with certain attributes or a segment, an experiment split, a new value, shipping an experiment's variation or stopping its run, after showing the current and resulting rules side by side and, in a live environment, getting an explicit yes. Use when the user asks to turn a flag on or off, roll a change out, target users or a segment, split an experiment, ship a variation, stop a run or change what a config serves in an environment, or asks how an experiment is going.
+description: Change a ConfigDirector config's targeting rules in one environment through the ConfigDirector MCP server or CLI, such as turning a flag on or off, a percentage rollout, rules for specific users, contexts with certain attributes or a segment, an experiment split, a new value, shipping an experiment's variation or stopping its run, after showing the current and resulting rules side by side and, in a live environment, getting an explicit yes. Use when the user asks to turn a flag on or off, roll a change out, target users or a segment, split an experiment, ship a variation, stop a run or change what a config serves in an environment, or asks how an experiment is going or how much longer it needs.
 license: MIT
 metadata:
   author: ConfigDirector
@@ -11,7 +11,7 @@ metadata:
 
 Work through the steps in order. The result is a new set of targeting rules for one config in one environment: the rules the environment has now, with the user's change applied, written once the user has seen the current and resulting rules side by side and said yes. Shipping an experiment's variation or stopping its run is such a change, saved by its own tool or command so that the run records how it ended. For several environments, work through the steps once per environment.
 
-A question about how an experiment is going changes nothing: it takes step 1, the config from step 2, and step 6.
+A question about an experiment, such as how it is going or how much longer it needs, changes nothing: it takes step 1, the config from step 2, and step 6.
 
 This skill changes targeting rules only, never a config's settings or a segment. To create a config, or to update a feature flag's role to kill switch or back, use `configdirector-create-config`; to create or change a segment, `configdirector-segments`.
 
@@ -34,7 +34,7 @@ Then read the token's permissions, before proposing anything. On MCP, they are t
 | `Segments: Read`                  | `segments:read`                 | `list_segments`                                         |
 | `Contexts: Read`                  | `contexts:read`                 | none: only an evaluation of a saved context reports it |
 
-When `Projects: Read`, `Environments: Read`, `Configs: Read` or `Configs: Update targeting rules` is missing, stop and ask before proposing anything; a question about how an experiment is going goes on without `Configs: Update targeting rules`. When `Segments: Read` is missing, tell the user that a change naming a segment needs it, and go on; once the change names a segment, stop and ask before composing it. When the CLI lists no `Contexts: Read`, tell the user that evaluating a saved context needs it, and go on.
+When `Projects: Read`, `Environments: Read`, `Configs: Read` or `Configs: Update targeting rules` is missing, stop and ask before proposing anything; a question about an experiment goes on without `Configs: Update targeting rules`. When `Segments: Read` is missing, tell the user that a change naming a segment needs it, and go on; once the change names a segment, stop and ask before composing it. When the CLI lists no `Contexts: Read`, tell the user that evaluating a saved context needs it, and go on.
 
 List the environments: `list_environments` / `configdirector environments list --json`. The environment is the one the user named, by slug or name; when they named none, or the name fits none or several, ask, listing the slugs. Note whether its `live` is `true`: a live environment serves real traffic, and step 3 asks for an explicit yes before changing it.
 
@@ -53,7 +53,7 @@ Stop and ask means: stop at once, before any other work, including work the user
 2. They make the change in the dashboard, with the resulting rules you show them, and you go on.
 3. Only when the user's task has work left that does not need the change: you go on with that work without it, and the environment keeps its current rules. Run on its own, this skill offers the first two.
 
-Wait for their answer. On choice 2 before the rules are composed, compose them and show them as steps 2 and 3 do, skipping any read that fails, and write nothing. On choice 2 for a ship or a stop, add that entering those rules by hand ends the run as `replaced`. A question about how an experiment is going has no change to make, so choice 1 is the only one.
+Wait for their answer. On choice 2 before the rules are composed, compose them and show them as steps 2 and 3 do, skipping any read that fails, and write nothing. On choice 2 for a ship or a stop, add that entering those rules by hand ends the run as `replaced`. A question about an experiment has no change to make, so choice 1 is the only one.
 
 ## 2. Read the current rules and their format
 
@@ -123,12 +123,14 @@ A saved context is one ConfigDirector stored from SDK evaluations in that enviro
 
 ## 6. Report how an experiment is going
 
-When the user asks how an experiment is going, or about an earlier run, read its runs in that environment. Only an experiment has runs, so for any other `role`, say so and read nothing more.
+When the user asks how an experiment is going, how much longer it needs, or about an earlier run, read its runs in that environment. Only an experiment has runs, so for any other `role`, say so and read nothing more.
 
 - MCP: `list_runs` with the project's ID, the config's `key` as `configKey` and the environment's `id` as `environmentId`, which returns them in `runs`.
 - CLI: `configdirector configs runs <key> --environment <slug> --json`, which prints them as an array.
 
 The runs come newest first. One without `endedAt` is running; any other ended with an `outcome`: `shipped`, with the variation in `shippedVariationId`, `stopped`, or `replaced`, when an ordinary save changed or removed the rollouts. Report the running run, or the newest when none is running, unless the user asks about another. When the current rules hold a rollout and no run is running, say the rollout has no run, so its exposures are not being counted, and that changing its shares starts one. With no runs and no rollout saved, say the experiment has not run in this environment.
+
+A question about how much longer the experiment needs takes the running run alone: give how long it needs, as [references/experiment-results.md](references/experiment-results.md) says under How long the run needs, and leave out the rest of this step unless the user asks for it. With no run running, point them to the **How long to run** card on the experiment's **Experiment** tab in the dashboard, which says what it needs to estimate a run before it starts.
 
 Word each rollout in `exposures.rollouts` from its data:
 

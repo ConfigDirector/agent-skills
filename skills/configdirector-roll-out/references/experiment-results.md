@@ -1,6 +1,6 @@
 # Read an experiment's results
 
-How `configdirector-roll-out` reads and words a run's `results`, from `list_runs` / `configdirector configs runs --json`: for step 6, when the user asks how an experiment is going, and for step 3, before a ship. The results compare each variation against the control on the metrics attached to the experiment.
+How `configdirector-roll-out` reads and words a run's `results`, from `list_runs` / `configdirector configs runs --json`: for step 6, when the user asks how an experiment is going or how much longer it needs, and for step 3, before a ship. The results compare each variation against the control on the metrics attached to the experiment.
 
 ## No metrics
 
@@ -46,8 +46,32 @@ The ship reading of a variation is what the user reads before shipping it, per r
 2. The primary metric on its `primaryKind`: the variation's value against the control's, its lift with the range it is likely in, its chance to beat control and its verdict. Without a primary metric, say no metric decides the experiment; while the rollout `needs-more-exposures`, say the variations cannot be compared yet.
 3. How fresh the results are.
 
+## How long the run needs
+
+On a running run, the primary metric's kind named by its `primaryKind` gives each `ready` rollout a `runLengthEstimate`: how many exposures the rollout needs, all its variations together, before a variation with a given real lift has a good chance of reading likely better, and how many more days that takes. Give it per rollout, as an estimate, naming each rollout by who it covers, as step 6 of `SKILL.md` words it, when the run has several:
+
+1. The pace: about `exposuresPerDay`, as a whole number, new exposures a day since `paceMeasuredSince`, given as a date. When `exposuresPerDay` is 0 or below, say instead that no new contexts were exposed since `paceMeasuredSince`, so the days cannot be estimated.
+2. One line per entry of `lifts`: its `lift` as a whole percentage, which already follows the metric's direction, so it is already negative on a `lower-is-better` metric; the rollout's `analyzedExposures` so far against about `exposuresNeeded`; and its `daysRemaining`:
+   - `0`: the rollout has enough exposures for that lift;
+   - above 365: more than a year;
+   - absent: give the exposures alone, as the pace says;
+   - otherwise: about that many more days.
+
+   For example: "For a real lift of +20%: 810 of about 22,617 exposures so far, about 222 more days."
+3. A row's lift is one a variation might really have over the control, not the lift measured so far: the smaller it is, the longer the run. The row the user reads is the smallest lift that would be worth shipping to them, and the choice stays theirs.
+4. The days assume new exposures keep arriving at that pace, and they usually slow down as a run goes on, so the days are the least the run needs. Give them as days, never as a date the run will end.
+5. Whatever the estimate says, a run should cover at least one full week, so every day of the week is in the result.
+
+Call it how long the run needs, and say a good chance, never how large a chance.
+
+A rollout without `runLengthEstimate`:
+
+- Without a primary metric: the estimate needs one; it is set on the experiment's **Settings** tab in the dashboard.
+- While the rollout `needs-more-exposures`: the estimate appears once every variation has enough exposures to be compared.
+- Otherwise: no estimate can be made from the control's numbers so far, which usually means none of its contexts has reported the primary metric's event yet.
+
 ## How the experiment is going
 
-Give the ship reading of every variation but the control, then any other guardrails and secondary metrics, in a line each. When the user asks which variation won or what to ship, this is the answer, and the choice stays theirs. Then name the events in `trackedEvents.events` that no metric attached to the experiment measures, with their `contexts`, since a metric attached for one would show its results.
+Give the ship reading of every variation but the control, then any other guardrails and secondary metrics, in a line each. When the user asks which variation won or what to ship, this is the answer, and the choice stays theirs. Then, on a running run, for each rollout where every variation but the control reads no clear difference on the primary metric's `primaryKind`, give how long the run needs, as above. Then name the events in `trackedEvents.events` that no metric attached to the experiment measures, with their `contexts`, since a metric attached for one would show its results.
 
-When the user asks how a number is computed, point them to https://docs.configdirector.com/getting-started/experiments/how-results-are-computed.
+When the user asks how a number is computed, point them to https://docs.configdirector.com/getting-started/experiments/how-results-are-computed, and for how long a run needs, to its section https://docs.configdirector.com/getting-started/experiments/how-results-are-computed#how-long-a-run-needs.
