@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-11
+
 ### Changed
 
 - `configdirector-roll-out` tells you how much longer an experiment's run needs when you ask. For a real lift of 2%, 5%, 10%, 20% and 50% on the primary metric, it gives the exposures so far against those needed before a variation with that lift has a good chance of reading likely better, and about how many more days that takes at the run's recent pace. It gives the days as the least the run needs, never as a date the run will end, and reminds you that a run should cover at least one full week. It also gives this after the results when you ask how an experiment is going and no variation shows a clear difference on the primary metric. It reads the estimate from the MCP server's `list_runs` or the CLI's `configs runs`, so it needs no newer `@configdirector/cli`.
