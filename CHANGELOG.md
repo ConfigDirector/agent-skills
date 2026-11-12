@@ -4,6 +4,11 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-create-config` finds every metric your project has for an event name, and when several have it, shows them by their event name, filter and value field and asks which one you mean. When you describe a metric that counts only some of an event's reports, such as only the checkouts on the Team plan, or sums a number from their details, such as the items bought, it creates one with a filter or a value field, reading the field names from your `track` calls and asking when it cannot. It shows the filter and the value field among the settings you confirm, and says they cannot be changed once the metric is created. Creating such a metric needs `@configdirector/cli` 0.23.0 or later on the CLI route.
+- `configdirector-roll-out` names each metric by its event name, filter and value field when it reports an experiment's results. For a metric attached while the run was going, it says since when the run counted it and that events reported before then are not in its numbers, and for one the run did not count, it says so and reads no verdict into it, before you ship a variation too. It reads both from the MCP server's `list_runs` or the CLI's `configs runs`, so it needs no newer `@configdirector/cli`.
+
 ## [0.19.0] - 2026-11-11
 
 ### Changed

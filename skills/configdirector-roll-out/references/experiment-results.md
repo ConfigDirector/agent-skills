@@ -14,11 +14,15 @@ Per rollout, the entry of `results.rollouts` with the rollout's `ruleId` gives:
 - `state`: `ready`, or `needs-more-exposures`, which means the variations cannot be compared yet; say so, and give each variation's value alone;
 - `crossovers`: above 0, that many contexts were exposed to more than one variation and are left out of every metric.
 
-Each metric in `results.primary`, `results.guardrail` and `results.secondary` has its `eventName`, its `direction`, and per kind in `kinds`, for each rollout, its variations with the control first. The primary metric's `primaryKind` is the kind that decides the experiment. Name each variation as step 3 of `SKILL.md` names it. Each variation has `exposures` and a `value`:
+Each metric in `results.primary`, `results.guardrail` and `results.secondary` has its `eventName`, `filter` and `valueField`, its `counting`, its `direction`, and per kind in `kinds`, for each rollout, its variations with the control first. The primary metric's `primaryKind` is the kind that decides the experiment.
+
+Several metrics can have the same event name, told apart by their filter and value field, so name a metric by its event name, then its filter's conditions joined by `and`, each as its `field`, its `operator` and its target values, a `text` condition's in brackets and separated by `, `, and a `boolean` condition as `is true` or `is false`, then `value from` and its `valueField`, with ` · ` between the parts, as in `checkout_completed · /plan is one of [team] and /items >= 2 · value from /seats`. A metric with neither is named by its event name alone.
+
+Name each variation as step 3 of `SKILL.md` names it. Each variation has `exposures` and a `value`:
 
 - `conversion`: the share of its exposed contexts that sent the event at least once, as a percentage with one decimal, with `converters`, how many did;
 - `count-per-context`: how many times each exposed context sent the event, on average, with two decimals;
-- `value-per-context`: the value sent with the event per exposed context, on average, with two decimals.
+- `value-per-context`: the value sent with the event, or the number in the metric's `valueField`, per exposed context, on average, with two decimals.
 
 Once the rollout is `ready`, every other variation also has:
 
@@ -32,6 +36,14 @@ Once the rollout is `ready`, every other variation also has:
 
 A verdict is a reading of the data so far: report it in the words above, and leave what to ship to the user.
 
+## Since when a metric was counted
+
+A metric with a filter or a value field is counted only from the moment it is attached to the experiment. Its `counting.kind` says what that means for the run:
+
+- `whole-run`: the run counted it from its start, as every metric without a filter or a value field; say nothing about it.
+- `since`: it was attached while the run was going, and the run counted it from `counting.since`, given in UTC. Say so beside its results, as in "counted since 5 Nov 09:30 UTC, when it was attached: events reported before then are not in these numbers."
+- `not-counted`: it was not attached while the run was open, so the run has no numbers and no verdict for it, and its `kinds` is empty. Say the run did not count it, in place of its results, and read no verdict into it.
+
 ## How fresh the results are
 
 - On a running run, they can be up to 25 minutes behind.
@@ -42,8 +54,8 @@ A verdict is a reading of the data so far: report it in the words above, and lea
 
 The ship reading of a variation is what the user reads before shipping it, per rollout:
 
-1. Every guardrail whose verdict is `likely-worse` for the variation, with its values and lift, as in "A guardrail is likely worse for treatment-a (Try it free for 14 days): support_ticket_opened, count per context, is 0.12 against the control's 0.05, +140%, likely between +66% and +269%." A guardrail is a metric that must not get worse. When none is likely worse, say so.
-2. The primary metric on its `primaryKind`: the variation's value against the control's, its lift with the range it is likely in, its chance to beat control and its verdict. Without a primary metric, say no metric decides the experiment; while the rollout `needs-more-exposures`, say the variations cannot be compared yet.
+1. Every guardrail whose verdict is `likely-worse` for the variation, with its values and lift, as in "A guardrail is likely worse for treatment-a (Try it free for 14 days): support_ticket_opened, count per context, is 0.12 against the control's 0.05, +140%, likely between +66% and +269%." A guardrail is a metric that must not get worse. When none is likely worse, say so. Name any guardrail the run did not count, which tells nothing either way.
+2. The primary metric on its `primaryKind`: the variation's value against the control's, its lift with the range it is likely in, its chance to beat control and its verdict, and, when its `counting.kind` is `since`, since when it was counted. Without a primary metric, say no metric decides the experiment; when the run did not count the primary metric, say so, and that this run gives no primary reading; while the rollout `needs-more-exposures`, say the variations cannot be compared yet.
 3. How fresh the results are.
 
 ## How long the run needs
@@ -67,6 +79,7 @@ Call it how long the run needs, and say a good chance, never how large a chance.
 A rollout without `runLengthEstimate`:
 
 - Without a primary metric: the estimate needs one; it is set on the experiment's **Settings** tab in the dashboard.
+- When the run did not count the primary metric: there are no numbers to estimate from in this run.
 - While the rollout `needs-more-exposures`: the estimate appears once every variation has enough exposures to be compared.
 - Otherwise: no estimate can be made from the control's numbers so far, which usually means none of its contexts has reported the primary metric's event yet.
 
