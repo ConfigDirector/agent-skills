@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-12
+
 ### Changed
 
 - `configdirector-create-config` finds every metric your project has for an event name, and when several have it, shows them by their event name, filter and value field and asks which one you mean. When you describe a metric that counts only some of an event's reports, such as only the checkouts on the Team plan, or sums a number from their details, such as the items bought, it creates one with a filter or a value field, reading the field names from your `track` calls and asking when it cannot. It shows the filter and the value field among the settings you confirm, and says they cannot be changed once the metric is created. Creating such a metric needs `@configdirector/cli` 0.23.0 or later on the CLI route.
