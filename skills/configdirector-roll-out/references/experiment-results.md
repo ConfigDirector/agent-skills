@@ -14,15 +14,24 @@ Per rollout, the entry of `results.rollouts` with the rollout's `ruleId` gives:
 - `state`: `ready`, or `needs-more-exposures`, which means the variations cannot be compared yet; say so, and give each variation's value alone;
 - `crossovers`: above 0, that many contexts were exposed to more than one variation and are left out of every metric.
 
-Each metric in `results.primary`, `results.guardrail` and `results.secondary` has its `eventName`, `filter` and `valueField`, its `counting`, its `direction`, and per kind in `kinds`, for each rollout, its variations with the control first. The primary metric's `primaryKind` is the kind that decides the experiment.
+Each metric in `results.primary`, `results.guardrail` and `results.secondary` has its `eventName`, `filter` and `valueField`, or, with `eventName` `null`, its `ratio`, `funnel` or `retention`; its `counting`, its `direction`, and per kind in `kinds`, for each rollout, its variations with the control first. The primary metric's `primaryKind` is the kind that decides the experiment.
 
-Several metrics can have the same event name, told apart by their filter and value field, so name a metric by its event name, then its filter's conditions joined by `and`, each as its `field`, its `operator` and its target values, a `text` condition's in brackets and separated by `, `, and a `boolean` condition as `is true` or `is false`, then `value from` and its `valueField`, with ` · ` between the parts, as in `checkout_completed · /plan is one of [team] and /items >= 2 · value from /seats`. A metric with neither is named by its event name alone.
+Several metrics can have the same event name, told apart by their filter and value field, so name a metric of one event name by its event name, then its filter's conditions joined by `and`, each as its `field`, its `operator` and its target values, a `text` condition's in brackets and separated by `, `, and a `boolean` condition as `is true` or `is false`, then `value from` and its `valueField`, with ` · ` between the parts, as in `checkout_completed · /plan is one of [team] and /items >= 2 · value from /seats`. A metric with neither is named by its event name alone.
+
+Name a ratio, a funnel or a retention metric by its kind first, then its definition, each event name followed by its filter's conditions as above, and leave its kind out after the name, since it reports that one kind:
+
+- a ratio by its numerator, `÷`, then its denominator, each side followed by `events`, `value`, or `value from` and its `valueField`, as in `Ratio: order_completed value ÷ order_completed events`;
+- a funnel by its steps in order, separated by `→`, as in `Funnel: cart_viewed → checkout_started → checkout_completed`;
+- a retention metric by its event name and its days, `day 7` when `firstDay` is `lastDay` and `days 7 to 13` otherwise, as in `Retention: app_opened · days 7 to 13`.
 
 Name each variation as step 3 of `SKILL.md` names it. Each variation has `exposures` and a `value`:
 
 - `conversion`: the share of its exposed contexts that sent the event at least once, as a percentage with one decimal, with `converters`, how many did;
 - `count-per-context`: how many times each exposed context sent the event, on average, with two decimals;
-- `value-per-context`: the value sent with the event, or the number in the metric's `valueField`, per exposed context, on average, with two decimals.
+- `value-per-context`: the value sent with the event, or the number in the metric's `valueField`, per exposed context, on average, with two decimals;
+- `ratio`: the numerator total divided by the denominator total, with two decimals, beside `numeratorTotal` and `denominatorTotal`, as in `37.42 (4,976.86 ÷ 133)`. A variation whose `denominatorTotal` is 0 has no `value` and nothing to compare: say nothing was added to its denominator yet, so it has no ratio to compare; while the control's is 0, no variation has a lift, chance or verdict.
+- `funnel`: the share of its exposed contexts that reached the last step, as a percentage with one decimal, with `contextsThatReachedEachStep`, how many reached each step in the steps' order, of its `exposures`, as in `25.0%, 180 → 131 → 60 of 240`.
+- `retention`: the share of its measured contexts that came back, as a percentage with one decimal, with `converters` of `exposures`, as in `41.3%, 85 of 206 came back`; [A retention metric](#a-retention-metric) says what measured means.
 
 Once the rollout is `ready`, every other variation also has:
 
@@ -36,12 +45,20 @@ Once the rollout is `ready`, every other variation also has:
 
 A verdict is a reading of the data so far: report it in the words above, and leave what to ship to the user.
 
+## A retention metric
+
+A retention metric counts a context only once its last day has ended, `lastDay + 1` days after the context's first exposure, day 0 being the first 24 hours: those are its measured contexts. Its variations' `exposures` are their measured contexts and `analyzedExposures` their exposed ones, so it can have no numbers, or values alone, while the run's other metrics are compared. Its kind's entry for each rollout has its own `state`, which says whether its variations can be compared in place of the rollout's. Once it has numbers, say above them how many of the contexts exposed have been measured so far, the sum of the variations' `exposures` of the sum of their `analyzedExposures`, as in "measured over the 412 contexts whose days 7 to 13 have passed, of 473 exposed".
+
+- No context measured yet, on a running run, when every variation's `exposures` is 0: say no context has had its days yet, and when the first can be: `lastDay + 1` days after the run's `startedAt`, or, when its `counting.kind` is `since`, `lastDay + 1` days after the later of `startedAt` and `firstDay` days before `counting.since`, given as a date and time in UTC. Give how many contexts were exposed so far, and read no verdict into it: there are no numbers yet.
+- Its own `state` is `needs-more-exposures`: say how many of the contexts exposed have been measured, and that its variations cannot be compared until enough of each are; give each variation's value alone.
+- On an ended run: it measured only the contexts whose last day ended by the run's end. When its `counting.kind` is `whole-run`, the others, the sum of `analyzedExposures` minus the sum of `exposures`, were exposed in the run's last `lastDay + 1` days and are never measured, so say how many. When it measured none, say no context's days had passed when the run ended, and give no numbers.
+
 ## Since when a metric was counted
 
-A metric with a filter or a value field is counted only from the moment it is attached to the experiment. Its `counting.kind` says what that means for the run:
+A metric with a filter or a value field, and every ratio, funnel and retention metric, is counted only from the moment it is attached to the experiment. Its `counting.kind` says what that means for the run:
 
 - `whole-run`: the run counted it from its start, as every metric without a filter or a value field; say nothing about it.
-- `since`: it was attached while the run was going, and the run counted it from `counting.since`, given in UTC. Say so beside its results, as in "counted since 5 Nov 09:30 UTC, when it was attached: events reported before then are not in these numbers."
+- `since`: it was attached while the run was going, and the run counted it from `counting.since`, given in UTC. Say so beside its results, as in "counted since 5 Nov 09:30 UTC, when it was attached: events reported before then are not in these numbers." A retention metric measures only the contexts whose first day started after that moment, so say that in place of the events.
 - `not-counted`: it was not attached while the run was open, so the run has no numbers and no verdict for it, and its `kinds` is empty. Say the run did not count it, in place of its results, and read no verdict into it.
 
 ## How fresh the results are
@@ -54,8 +71,8 @@ A metric with a filter or a value field is counted only from the moment it is at
 
 The ship reading of a variation is what the user reads before shipping it, per rollout:
 
-1. Every guardrail whose verdict is `likely-worse` for the variation, with its values and lift, as in "A guardrail is likely worse for treatment-a (Try it free for 14 days): support_ticket_opened, count per context, is 0.12 against the control's 0.05, +140%, likely between +66% and +269%." A guardrail is a metric that must not get worse. When none is likely worse, say so. Name any guardrail the run did not count, which tells nothing either way.
-2. The primary metric on its `primaryKind`: the variation's value against the control's, its lift with the range it is likely in, its chance to beat control and its verdict, and, when its `counting.kind` is `since`, since when it was counted. Without a primary metric, say no metric decides the experiment; when the run did not count the primary metric, say so, and that this run gives no primary reading; while the rollout `needs-more-exposures`, say the variations cannot be compared yet.
+1. Every guardrail whose verdict is `likely-worse` for the variation, with its values and lift, as in "A guardrail is likely worse for treatment-a (Try it free for 14 days): support_ticket_opened, count per context, is 0.12 against the control's 0.05, +140%, likely between +66% and +269%." A guardrail is a metric that must not get worse. When none is likely worse, say so. Name any guardrail the run did not count, and any retention guardrail with no measured context yet, which tells nothing either way.
+2. The primary metric on its `primaryKind`: the variation's value against the control's, its lift with the range it is likely in, its chance to beat control and its verdict, and, when its `counting.kind` is `since`, since when it was counted. For a retention primary whose `counting.kind` is `whole-run`, also say how many exposed contexts have not had their days yet, the sum of `analyzedExposures` minus the sum of `exposures` in the rollout, and that shipping ends the run, so they will never be measured, as in "61 contexts have not had their days 7 to 13 yet. Shipping ends the run, so they will never be measured."; leave it out when there are none. While a retention primary has no measured context, say it has no numbers yet and when the first can be, as [A retention metric](#a-retention-metric) says, so this run gives no primary reading yet. Without a primary metric, say no metric decides the experiment; when the run did not count the primary metric, say so, and that this run gives no primary reading; while the rollout `needs-more-exposures`, say the variations cannot be compared yet.
 3. How fresh the results are.
 
 ## How long the run needs
@@ -69,6 +86,8 @@ On a running run, the primary metric's kind named by its `primaryKind` gives eac
    - absent: give the exposures alone, as the pace says;
    - otherwise: about that many more days.
 
+   For a retention primary, every number of days includes the `lastDay + 1` days the last contexts exposed wait before they are measured: a `daysRemaining` of exactly `lastDay + 1` means the rollout has the exposures for that lift and waits up to that many days for them to be measured, and `0` means enough contexts are measured.
+
    For example: "For a real lift of +20%: 810 of about 22,617 exposures so far, about 222 more days."
 3. A row's lift is one a variation might really have over the control, not the lift measured so far: the smaller it is, the longer the run. The row the user reads is the smallest lift that would be worth shipping to them, and the choice stays theirs.
 4. The days assume new exposures keep arriving at that pace, and they usually slow down as a run goes on, so the days are the least the run needs. Give them as days, never as a date the run will end.
@@ -80,11 +99,11 @@ A rollout without `runLengthEstimate`:
 
 - Without a primary metric: the estimate needs one; it is set on the experiment's **Settings** tab in the dashboard.
 - When the run did not count the primary metric: there are no numbers to estimate from in this run.
-- While the rollout `needs-more-exposures`: the estimate appears once every variation has enough exposures to be compared.
+- While the rollout `needs-more-exposures`: the estimate appears once every variation has enough exposures to be compared. For a retention primary, read its kind's own `state`: the estimate appears once enough of every variation's contexts are measured.
 - Otherwise: no estimate can be made from the control's numbers so far, which usually means none of its contexts has reported the primary metric's event yet.
 
 ## How the experiment is going
 
-Give the ship reading of every variation but the control, then any other guardrails and secondary metrics, in a line each. When the user asks which variation won or what to ship, this is the answer, and the choice stays theirs. Then, on a running run, for each rollout where every variation but the control reads no clear difference on the primary metric's `primaryKind`, give how long the run needs, as above. Then name the events in `trackedEvents.events` that no metric attached to the experiment measures, with their `contexts`, since a metric attached for one would show its results.
+Give the ship reading of every variation but the control, then any other guardrails and secondary metrics, in a line each. When the user asks which variation won or what to ship, this is the answer, and the choice stays theirs. Then, on a running run, for each rollout where every variation but the control reads no clear difference on the primary metric's `primaryKind`, give how long the run needs, as above. Then name the events in `trackedEvents.events` that no metric attached to the experiment measures, with their `contexts`, since a metric attached for one would show its results. A ratio measures the event names of its numerator and its denominator, a funnel those of its steps, and a retention metric its event name.
 
 When the user asks how a number is computed, point them to https://docs.configdirector.com/getting-started/experiments/how-results-are-computed, and for how long a run needs, to its section https://docs.configdirector.com/getting-started/experiments/how-results-are-computed#how-long-a-run-needs.
