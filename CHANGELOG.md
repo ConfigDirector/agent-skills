@@ -4,6 +4,10 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- Before you ship, for each retention guardrail that has counted the run from its start, `configdirector-roll-out` says how many contexts have not had their days yet and will never be measured, as it already did for a retention primary, whether or not the guardrail has numbers yet.
+
 ## [0.21.0] - 2026-11-14
 
 ### Changed
