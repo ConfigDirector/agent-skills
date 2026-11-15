@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-14
+
 ### Changed
 
 - `configdirector-create-config` proposes an experiment's control as its default targeting rule value: the variation you call the control, or else the first one you give, or `false` for a boolean experiment. It says that every run that starts while that value is the default targeting rule value compares the other variations against it, and asks only when your description says another variation should be the default targeting rule value. After creating any config, it reads the config back and tells you the default targeting rule value its environments serve, naming any environment that serves a value other than the one sent.
