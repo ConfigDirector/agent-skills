@@ -6,7 +6,9 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ### Changed
 
-- Before you ship, for each retention guardrail that has counted the run from its start, `configdirector-roll-out` says how many contexts have not had their days yet and will never be measured, as it already did for a retention primary, whether or not the guardrail has numbers yet.
+- `configdirector-create-config` proposes an experiment's control as its default targeting rule value: the variation you call the control, or else the first one you give, or `false` for a boolean experiment. It says that every run that starts while that value is the default targeting rule value compares the other variations against it, and asks only when your description says another variation should be the default targeting rule value. After creating any config, it reads the config back and tells you the default targeting rule value its environments serve, naming any environment that serves a value other than the one sent.
+- Before you ship, and when you ask how an experiment is going, `configdirector-roll-out` says for each retention guardrail that has counted the run from its start how many contexts have not had their days yet and will never be measured, as it already did for a retention primary, whether or not the guardrail has numbers yet.
+- Before you ship, and when you ask how an experiment is going, from a run that started less than a week ago, `configdirector-roll-out` says how many days the run has covered and that a run should cover at least one full week, whatever the results say.
 
 ## [0.21.0] - 2026-11-14
 
