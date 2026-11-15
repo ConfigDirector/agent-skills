@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-14
+
 ### Changed
 
 - `configdirector-create-config` creates a ratio, a funnel or a retention metric for an experiment when you describe one, such as revenue per order, getting from the cart to a purchase, or coming back in the second week, reading the event names from your `track` calls and asking when it cannot. It goes on with a metric your project already has when one has the same definition, names these metrics kind first, as in `Retention: app_opened · days 7 to 13`, and says among the settings you confirm that the definition cannot be changed once the metric is created, that the metric is counted from the moment it is attached, and when a retention metric's first numbers show. On the CLI route, a project that has one of these metrics needs `@configdirector/cli` 0.24.0 or later, and the skill tells you to update an older one.
