@@ -61,6 +61,8 @@ Then decide from the config, in this order, and stop where a line says so:
 
 Run `configdirector scan --json` from the directory that holds `configdirector.json`, or with `--project <slug>` when the repository has none. The scan has no MCP form: when the CLI is not installed, send the user to the Install section of https://docs.configdirector.com/integrations/cli, and when it reports `No API token found` or `No CLI sign-in is for the organization`, have them sign in to the repository's organization with `configdirector login` in their own terminal, never by pasting the token into the chat. The CLI signs in on its own, apart from the MCP server, and `scan` needs `Projects: Read` and `Configs: Read`, so a token with the permissions of step 1 serves it as well.
 
+In a repository with a `composer.json`, run `configdirector --version` before the scan: versions before 0.25.0 do not read PHP code, so their scan lists none of its references. With one of those, stop and ask: tell the user to install `@configdirector/cli` again, which updates it, as the Install section of https://docs.configdirector.com/integrations/cli shows.
+
 Collect every entry of `references` whose `key` is the config's current key or one of its old keys:
 
 - `kind` `direct`: an SDK call that evaluates the flag, with `call`, and `argument` naming the constant when the key came from one. The constant's own definition is not listed again.
@@ -72,7 +74,7 @@ The scan covers this repository only.
 
 `dynamicReferences` lists the SDK calls whose key the scan could not read, each with its `file`, `line`, `sdk`, `call` and `argument`. Rule each one out, in this order:
 
-1. The calling SDK does not receive the config: `sdk` is a server SDK (`js-server`, `nuxt-server`, `nextjs-server`, `openfeature-node`, `java`, `openfeature-java`, `python`, `openfeature-python`, `dotnet`, `openfeature-dotnet`, `go` or `openfeature-go`) and the config's `server` is `false`, or `sdk` is a client SDK (`js-client`, `react`, `react-native`, `vue`, `nuxt-client`, `nextjs-client`, `openfeature-web`, `flutter`, `openfeature-flutter`, `swift`, `openfeature-swift`, `android` or `openfeature-android`) and the config's `client` is `false`. An `sdk` in neither list goes to rule 2.
+1. The calling SDK does not receive the config: `sdk` is a server SDK (`js-server`, `nuxt-server`, `nextjs-server`, `openfeature-node`, `java`, `openfeature-java`, `python`, `openfeature-python`, `dotnet`, `openfeature-dotnet`, `go`, `openfeature-go`, `php` or `openfeature-php`) and the config's `server` is `false`, or `sdk` is a client SDK (`js-client`, `react`, `react-native`, `vue`, `nuxt-client`, `nextjs-client`, `openfeature-web`, `flutter`, `openfeature-flutter`, `swift`, `openfeature-swift`, `android` or `openfeature-android`) and the config's `client` is `false`. An `sdk` in neither list goes to rule 2.
 2. The code fixes the keys the call can read, and this flag's are not among them: read the call and follow `argument` to where the key comes from, through the callers when it is a parameter. The call is ruled out when every value the key can hold is written in the code, as a type union, a record or a list, and none is the config's current key or an old key.
 
 A call ruled out stays as it is. For the calls neither rule settles, ask once, naming only those calls, each with its `file`, `line`, `call` and `argument` and where its key comes from: whether it can read this flag, and when it can, what it should do once the flag is gone. Edit nothing before the answer.

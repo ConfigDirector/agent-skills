@@ -13,7 +13,7 @@ Apply these rules whenever code reads a config or feature flag through a ConfigD
 
 ## 1. Find the SDK and its docs page
 
-1. Read the project's dependency manifest (`package.json`, `pubspec.yaml`, `Package.swift`, the Gradle or Maven build, the `.csproj`, `pyproject.toml` or `requirements.txt`, `go.mod`). In a monorepo, read the manifest of the app whose code you are working on. The project uses ConfigDirector when a dependency's name contains `configdirector`, or when an OpenFeature SDK (a dependency whose name contains `openfeature` or `open-feature`) sits next to a ConfigDirector provider.
+1. Read the project's dependency manifest (`package.json`, `pubspec.yaml`, `Package.swift`, the Gradle or Maven build, the `.csproj`, `pyproject.toml` or `requirements.txt`, `go.mod`, `composer.json`). In a monorepo, read the manifest of the app whose code you are working on. The project uses ConfigDirector when a dependency's name contains `configdirector`, or when an OpenFeature SDK (a dependency whose name contains `openfeature` or `open-feature`) sits next to a ConfigDirector provider.
 2. Open https://docs.configdirector.com/sdks/available-sdks and follow the link for that SDK; for an OpenFeature provider, the link under OpenFeature for its platform. Fetch that page and take the evaluation calls, the context shape, and where the client is created from it. Do not write any call from memory: SDKs differ, and the page is the source of truth.
 3. The page says whether the SDK is a client SDK (browsers and mobile apps) or a server SDK (backend services). Keep that in mind for the rules below.
 
@@ -31,7 +31,7 @@ If no dependency matches, the project does not use ConfigDirector yet; `configdi
 
 **Keys are string literals or constants assigned once.** `configdirector scan` and `configdirector validate` find a read by its key: a string literal in the call, or a constant that holds one and is assigned nowhere else. A key built at runtime, read from a variable, or chosen from a list is a dynamic reference, listed but never checked, so a typo, a rename or a wrong type in it reaches production. When several reads share a key, give it one constant and read it through that constant everywhere.
 
-**One client per application.** Create the client once, where the application starts, and share it, as the SDK page shows. An initialized client holds the values in memory and receives updates, so every read is a local lookup; a client created per request or per call opens a new connection each time and returns the in-code default value until it is ready.
+**One client per application, or one per request in PHP.** Create the client once, where the application starts, and share it, as the SDK page shows. An initialized client holds the values in memory and receives updates, so every read is a local lookup; a client created per request or per call opens a new connection each time and returns the in-code default value until it is ready. PHP works the other way round: its SDK page creates one client per request in the framework's container, and each one reads the values the host keeps in its local store, while a client shared across requests, such as a singleton binding or a controller's constructor argument, keeps serving the values it read first. The OpenFeature PHP page sets the provider once per request the same way.
 
 ## 3. Writing code that reads a config
 
@@ -55,6 +55,7 @@ Read every file that imports the SDK or the project's own module around it, and 
 - a server-only config read from a client SDK, or a client-only one from a server SDK, and a server SDK key in client code or a tracked file;
 - a read without a context where the user is known;
 - a key built at runtime, read from a variable, or assigned in more than one place;
-- a client created per request, per call, or inside a component or handler.
+- a client created per request, per call, or inside a component or handler, except PHP's one client per request;
+- in PHP, a client shared across requests, such as a singleton binding or a controller's constructor argument.
 
 When the CLI is installed and `configdirector.json` exists, run `configdirector validate` and add its findings to the review; `configdirector scan` lists the dynamic references `validate` cannot check. The CLI docs page, https://docs.configdirector.com/integrations/cli, explains each finding and what to do about it. When `validate` exits with 2, read the two messages step 3 names as it says; for any other, report what it said and that the keys were not checked against the project, and go on with the review.

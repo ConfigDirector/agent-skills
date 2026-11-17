@@ -33,6 +33,7 @@ Look at the manifest files in the project (and in each app of a monorepo) and pi
 | `.csproj` or `.sln`                                                          | .NET                | https://docs.configdirector.com/sdks/server/dotnet           |
 | `pyproject.toml`, `requirements.txt`, or `setup.py`                          | Python              | https://docs.configdirector.com/sdks/server/python           |
 | `go.mod`                                                                     | Go                  | https://docs.configdirector.com/sdks/server/go               |
+| `composer.json`                                                              | PHP                 | https://docs.configdirector.com/sdks/server/php              |
 | OpenFeature web app                                                          | OpenFeature Web     | https://docs.configdirector.com/sdks/openfeature/web         |
 | OpenFeature Node.js server                                                   | OpenFeature Node.js | https://docs.configdirector.com/sdks/openfeature/node-js     |
 | OpenFeature Swift app                                                        | OpenFeature Swift   | https://docs.configdirector.com/sdks/openfeature/swift       |
@@ -42,6 +43,7 @@ Look at the manifest files in the project (and in each app of a monorepo) and pi
 | OpenFeature Java server                                                      | OpenFeature Java    | https://docs.configdirector.com/sdks/openfeature/java        |
 | OpenFeature .NET server                                                      | OpenFeature .NET    | https://docs.configdirector.com/sdks/openfeature/dotnet      |
 | OpenFeature Go server                                                        | OpenFeature Go      | https://docs.configdirector.com/sdks/openfeature/go          |
+| OpenFeature PHP server                                                       | OpenFeature PHP     | https://docs.configdirector.com/sdks/openfeature/php         |
 
 The more specific row wins: a Next.js app also depends on `react`, and it gets the Next.js SDK. If the project has several apps, ask which one to set up. If nothing matches, tell the user which SDKs exist (https://docs.configdirector.com/sdks/available-sdks) and stop.
 
@@ -54,7 +56,7 @@ Fetch the docs page from the table and follow it for the install command, the in
 ## 3. Install and initialize the SDK
 
 - Install with the package manager the project already uses (look for its lockfile or build files).
-- Initialize the SDK where the app starts, following the docs page, so it is created once for the whole app.
+- Initialize the SDK where the app starts, following the docs page, so it is created once for the whole app. In PHP, the docs page creates the client in the framework's container instead, once per request.
 - Read the SDK key from an environment variable, using the project's existing convention for environment variables and the prefix the framework needs to expose a value to the browser when it is a client SDK (for example `VITE_`, `NEXT_PUBLIC_`, or `NUXT_PUBLIC_`). Name it after ConfigDirector, for example `CONFIGDIRECTOR_SDK_KEY`.
 - If the project has an `.env.example` or similar template, add the variable to it with an empty value.
 - Never write an SDK key into a tracked file. Server SDK keys are secrets.
