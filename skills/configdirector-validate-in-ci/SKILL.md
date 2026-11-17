@@ -33,8 +33,9 @@ Otherwise:
    - Exit 0: the file is written. It is committed with the CI change, so every run and every CI job uses the same project.
    - Exit 2 with `No API token found`: no token is set where you run commands. Send the user to `configdirector-connect` for one with `Projects: Read` and `Configs: Read`, then run `init` again.
    - Exit 2 with `both have a project with the slug`: several organizations the CLI is signed in to have a project with that slug. Ask the user which organization, offering the names the message lists, and run `configdirector init --project <slug> --organization <name>`.
+   - Exit 2 with `may be outside its project access`, or with `The Admin API refused the request` and the code `PROJECT_ACCESS_DENIED`: a token the CLI used is limited to selected projects. Tell the user it may be limited to other projects than this one, and to check its project access on the dashboard's **API tokens** page, where the project can be added to it. Then ask about the slug and the organization as the next case does.
    - Exit 2 with `No project has the slug` or `No project in the API token's organization has the slug`: ask for the slug again, and whether the CLI is signed in to the organization that holds the project. When it is not, send the user to `configdirector-connect`.
-   - Exit 2 with `The Admin API refused the request`: the token was rejected, or it lacks the permission the message names in its short form, such as `projects:read`. Tell the user which one in the dashboard's wording, `Projects: Read`, and send them to `configdirector-connect`.
+   - Exit 2 with `The Admin API refused the request` and another code: the token was rejected, or it lacks the permission the message names in its short form, such as `projects:read`. Tell the user which one in the dashboard's wording, `Projects: Read`, and send them to `configdirector-connect`.
    - Exit 2 with any other message, such as a suspended service or an unreachable API: report the message, which says what to do, and stop.
 
 ## 3. The user creates the CI token
@@ -43,13 +44,13 @@ Find the CI system first: `.github/workflows/` is GitHub Actions, `.gitlab-ci.ym
 
 On GitHub, unless the user asked for the `npx` command rather than the action, ask whether the action should also upload the scan on pushes to the default branch, which it does by default. The upload lets each config's **Code references** tab in the dashboard show the code that reads it, and marks the configs no scanned repository reads outside tests as **Not in code** on the project's configs list. When they want the upload, tell them it also sends a few lines of code around each reference, and that the page's **What leaves your repository** lists everything it sends; ask whether to leave those lines out with `snippets: false`. The answers decide the token's permissions here and the action's inputs in step 4.
 
-Tell the user to create a token used only by CI, in the dashboard under **API tokens**, and to save it as a secret named `CONFIGDIRECTOR_TOKEN`. The token needs `Projects: Read` and `Configs: Read`, and `Code references: Update` as well when the action uploads. With `upload: false`, on GitLab, on another CI system or with the `npx` command of step 4, the two read permissions are enough, and the token cannot change anything. The secret goes:
+Tell the user to create a token used only by CI, in the dashboard under **API tokens**, and to save it as a secret named `CONFIGDIRECTOR_TOKEN`. Under **Project access**, they choose **Selected projects** and pick the one project `configdirector.json` links. The token needs `Projects: Read` and `Configs: Read`, and `Code references: Update` as well when the action uploads. With `upload: false`, on GitLab, on another CI system or with the `npx` command of step 4, the two read permissions are enough, and the token cannot change anything. The secret goes:
 
 - GitHub: under the repository's **Settings → Secrets and variables → Actions**.
 - GitLab: as a masked variable under the project's **Settings → CI/CD → Variables**, with **Protect variable** left unmarked, so merge request pipelines get it too.
 - Another CI system: in its secret store, passed to the job as the environment variable `CONFIGDIRECTOR_TOKEN`.
 
-Tell them why a token used only by CI, rather than their own: it can be replaced or revoked without affecting anything else. Tell them too that a token belongs to the member who created it and stops working when that member leaves the organization; CI then fails with `API_TOKEN_OWNER_REMOVED` until another member creates a new one.
+Tell them why a token used only by CI, rather than their own: it can be replaced or revoked without affecting anything else, and limited to the repository's project, it cannot read or change any other project. Tell them too that a token belongs to the member who created it and stops working when that member leaves the organization; CI then fails with `API_TOKEN_OWNER_REMOVED` until another member creates a new one.
 
 The user adds the secret themselves, now or before the first CI run. Go on with step 4.
 
@@ -75,10 +76,11 @@ Run `configdirector validate` from the directory that holds `configdirector.json
 - Exit 0: no problem, so the CI job passes on this code.
 - Exit 1: at least one finding, meaning the code reads a config wrong, so the CI job fails until each is settled. Explain each finding by its kind as the page's table does: what it means for the app, and what to do. Each finding is the user's to settle: correct the key in the code, create the config in ConfigDirector, or add the key to `ignoreKeys`. Change nothing in ConfigDirector, and change the code only once the user chooses.
 - Exit 2 with `There are CLI sign-ins for`: the CLI is signed in to several organizations, and nothing names this repository's. Ask the user which organization, offering the names the message lists. When the directory holds a `configdirector.json`, it has no `organization` yet: run `configdirector init --organization <name>` from that directory, which adds it, and tell the user the file changed and belongs in their next commit. When it holds none, pass `--organization <name>` to every later CLI command. Then run the command again.
+- Exit 2 with `may be outside its project access`, or with `The Admin API refused the request` and the code `PROJECT_ACCESS_DENIED`: the token where you run commands is limited to selected projects that may leave out the project `configdirector.json` links. Tell the user to check its project access on the dashboard's **API tokens** page, where the project can be added to it, then run the command again.
 - Exit 2 with `The token from` and `belongs to the organization`: the token the CLI used belongs to another organization than the one `configdirector.json` names. Tell the user so, and where the token came from, as the message names it, such as `CONFIGDIRECTOR_TOKEN`. Send them to `configdirector-connect`.
 - Exit 2 with any other message: the command could not run, and the message says why. No token, a rejected token or a missing permission sends the user to `configdirector-connect`, with a missing permission named as in step 2.
 
-Tell the user the codes mean the same in CI. There, exit 2 is a missing `CONFIGDIRECTOR_TOKEN` secret (`No API token found`), a rejected token, a token of another organization than the one `configdirector.json` names, a missing permission or an outage, so a build that fails with 2 is never a wrong key: the token or the service needs looking at, not the code.
+Tell the user the codes mean the same in CI. There, exit 2 is a missing `CONFIGDIRECTOR_TOKEN` secret (`No API token found`), a rejected token, a token of another organization than the one `configdirector.json` names, a token limited to other projects, a missing permission or an outage, so a build that fails with 2 is never a wrong key: the token or the service needs looking at, not the code.
 
 When the summary counts dynamic references, tell the user they are never checked, so a wrong key in one passes the build; `configdirector-use-configs-in-code` shows how to read a key so it is checked.
 
@@ -87,6 +89,6 @@ When the summary counts dynamic references, tell the user they are never checked
 In a few lines, tell the user:
 
 - the files changed, `configdirector.json` and the workflow or `.gitlab-ci.yml`, to commit together, or the command for their CI system;
-- the secret to add, `CONFIGDIRECTOR_TOKEN` with a CI-only token that has the permissions step 3 named for their choice, and where;
+- the secret to add, `CONFIGDIRECTOR_TOKEN` with a CI-only token limited to the repository's project, with the permissions step 3 named for their choice, and where;
 - what the first CI run will show: the findings of step 6 still open, with exit 1, or a pass; and exit 2 with `No API token found` if it runs before the secret is added;
 - with the upload, that the first push to the default branch fills each config's **Code references** tab, and that a token without `Code references: Update` passes pull requests but fails on the default branch, with `INSUFFICIENT_PERMISSIONS` in the log.

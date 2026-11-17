@@ -30,7 +30,7 @@ Recommend an expiration on the token, as the MCP docs page does. How long is the
 
 ## 2. The user creates the token
 
-Tell the user to create the token in the ConfigDirector dashboard under **API tokens**, with the permissions from step 1 and the expiration they chose, and to keep it themselves: never in a tracked file, and never in this conversation. A token belongs to one organization, so a user who works with several creates one in each.
+Tell the user to create the token in the ConfigDirector dashboard under **API tokens**, with the permissions from step 1 and the expiration they chose, and to keep it themselves: never in a tracked file, and never in this conversation. A token belongs to one organization, so a user who works with several creates one in each. Tell them too that under **Project access** the token can reach **All projects** of the organization, or only the **Selected projects** they pick, and then no other project.
 
 ## 3. Pick the route and set it up
 

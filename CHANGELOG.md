@@ -4,6 +4,11 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- `configdirector-validate-in-ci` tells you to limit the CI token to the repository's project, choosing **Selected projects** under **Project access** on the **API tokens** page, so the token cannot read or change any other project. When the CLI says a project may be outside the token's project access, or ConfigDirector refuses the token with `PROJECT_ACCESS_DENIED`, the skill tells you the token may be limited to other projects and to check its project access on the **API tokens** page, instead of reading it as a wrong slug or a missing permission. `@configdirector/cli` says so from 0.25.0; with an earlier CLI, the skill reads a project outside the token's project access as a slug no project has, as before.
+- `configdirector-connect` mentions, where it tells you to create the token, that a token can reach all projects of the organization or only the projects you select.
+
 ## [0.22.0] - 2026-11-14
 
 ### Changed
