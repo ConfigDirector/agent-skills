@@ -4,7 +4,7 @@ description: Change a ConfigDirector config's targeting rules in one environment
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.22.0
+  version: 0.23.0
 ---
 
 # Change targeting rules in one environment
