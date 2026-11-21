@@ -13,7 +13,7 @@ Work through the steps in order. The result is a CI job that runs `configdirecto
 
 The CI job needs an API token of its own, which the user creates for CI only in step 3. Its permissions are named there as the ConfigDirector dashboard shows them under **API tokens**. The commands you run yourself in steps 2 and 6 use the token already set where you run commands, which `configdirector-connect` sets up.
 
-Both tokens are the user's. Never ask for one, never read one from a file, and never write one anywhere, the workflow and `configdirector.json` included: CI reads its token from the secret `CONFIGDIRECTOR_TOKEN`. If the user pastes a token into the conversation, tell them it is now in the transcript, ask them to revoke it on the **API tokens** page and create another, and go on without it.
+Both tokens stay with the user. Never ask for one, never read one from a file, and never write one anywhere, the workflow and `configdirector.json` included: CI reads its token from the secret `CONFIGDIRECTOR_TOKEN`. If the user pastes a token into the conversation, tell them it is now in the transcript, ask them to revoke it on the **API tokens** page and create another, and go on without it.
 
 ## 1. Read the CLI docs page
 
@@ -44,13 +44,13 @@ Find the CI system first: `.github/workflows/` is GitHub Actions, `.gitlab-ci.ym
 
 On GitHub, unless the user asked for the `npx` command rather than the action, ask whether the action should also upload the scan on pushes to the default branch, which it does by default. The upload lets each config's **Code references** tab in the dashboard show the code that reads it, and marks the configs no scanned repository reads outside tests as **Not in code** on the project's configs list. When they want the upload, tell them it also sends a few lines of code around each reference, and that the page's **What leaves your repository** lists everything it sends; ask whether to leave those lines out with `snippets: false`. The answers decide the token's permissions here and the action's inputs in step 4.
 
-Tell the user to create a token used only by CI, in the dashboard under **API tokens**, and to save it as a secret named `CONFIGDIRECTOR_TOKEN`. Under **Project access**, they choose **Selected projects** and pick the one project `configdirector.json` links. The token needs `Projects: Read` and `Configs: Read`, and `Code references: Update` as well when the action uploads. With `upload: false`, on GitLab, on another CI system or with the `npx` command of step 4, the two read permissions are enough, and the token cannot change anything. The secret goes:
+Tell the user to create a token used only by CI in the dashboard under **API tokens**, choosing **Organization API token**, and to save it as a secret named `CONFIGDIRECTOR_TOKEN`. Under **Project access**, they choose **Selected projects** and pick the one project `configdirector.json` links. The token needs `Projects: Read` and `Configs: Read`, and `Code references: Update` as well when the action uploads. With `upload: false`, on GitLab, on another CI system or with the `npx` command of step 4, the two read permissions are enough, and the token cannot change anything. The secret goes:
 
 - GitHub: under the repository's **Settings → Secrets and variables → Actions**.
 - GitLab: as a masked variable under the project's **Settings → CI/CD → Variables**, with **Protect variable** left unmarked, so merge request pipelines get it too.
 - Another CI system: in its secret store, passed to the job as the environment variable `CONFIGDIRECTOR_TOKEN`.
 
-Tell them why a token used only by CI, rather than their own: it can be replaced or revoked without affecting anything else, and limited to the repository's project, it cannot read or change any other project. Tell them too that a token belongs to the member who created it and stops working when that member leaves the organization; CI then fails with `API_TOKEN_OWNER_REMOVED` until another member creates a new one.
+Tell them why CI gets an organization API token of its own rather than theirs: it belongs to the organization, so CI keeps running when the member who generated it changes role or leaves; it can be replaced or revoked without affecting anything else; and limited to the repository's project, it cannot read or change any other project.
 
 The user adds the secret themselves, now or before the first CI run. Go on with step 4.
 
@@ -89,6 +89,6 @@ When the summary counts dynamic references, tell the user they are never checked
 In a few lines, tell the user:
 
 - the files changed, `configdirector.json` and the workflow or `.gitlab-ci.yml`, to commit together, or the command for their CI system;
-- the secret to add, `CONFIGDIRECTOR_TOKEN` with a CI-only token limited to the repository's project, with the permissions step 3 named for their choice, and where;
+- the secret to add, `CONFIGDIRECTOR_TOKEN` with an organization API token used only by CI and limited to the repository's project, with the permissions step 3 named for their choice, and where;
 - what the first CI run will show: the findings of step 6 still open, with exit 1, or a pass; and exit 2 with `No API token found` if it runs before the secret is added;
 - with the upload, that the first push to the default branch fills each config's **Code references** tab, and that a token without `Code references: Update` passes pull requests but fails on the default branch, with `INSUFFICIENT_PERMISSIONS` in the log.
