@@ -4,6 +4,8 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-22
+
 ### Changed
 
 - `configdirector-validate-in-ci` tells you to create an organization API token for CI, choosing **Organization API token** on the **API tokens** page, and says why: it belongs to the organization, so CI keeps running when the member who generated it changes role or leaves. It no longer warns that CI stops when that member leaves the organization.
