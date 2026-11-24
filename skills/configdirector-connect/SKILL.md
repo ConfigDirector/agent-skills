@@ -4,7 +4,7 @@ description: Set up and check this coding agent's access to ConfigDirector, thro
 license: MIT
 metadata:
   author: ConfigDirector
-  version: 0.24.0
+  version: 0.25.0
 ---
 
 # Connect this agent to ConfigDirector
