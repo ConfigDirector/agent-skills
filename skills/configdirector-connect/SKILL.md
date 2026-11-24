@@ -55,7 +55,11 @@ Ask the user whether their agent supports MCP servers. If it does, set up the MC
 
 ### MCP
 
-Call `list_projects`. Report the projects it returns and the ConfigDirector tools the server lists. The server exposes only the tools the token's permissions allow, so a tool missing from the list names a missing permission: `create_config` needs `Configs: Create`, `update_targeting_rules` needs `Configs: Update targeting rules`, and every other tool the permission its name points at. If no ConfigDirector tool is available at all, the agent has not picked up the configuration or the token: ask the user to repeat item 5 of the MCP setup, then try again.
+Call `list_projects`. Read the result like this:
+
+- No ConfigDirector tool is available at all: the agent has not picked up the configuration or the token. Ask the user to repeat item 5 of the MCP setup, then try again.
+- `list_projects` fails with a message that the Authorization header is missing, code `AUTHORIZATION_HEADER_MISSING`: the agent reaches the server, but its configuration sends no `Authorization` header. The server lists every tool to a client that sends no token, so the tools listed say nothing about permissions yet. Write the configuration again in place of the one the agent uses, with the `Authorization` header the page shows for the agent, as items 2 to 4 of the MCP setup say, then go on with item 5 and try again.
+- It returns projects: report them and the ConfigDirector tools the server lists. The server exposes only the tools the token's permissions allow, so a tool missing from the list names a missing permission: `create_config` needs `Configs: Create`, `update_targeting_rules` needs `Configs: Update targeting rules`, and every other tool the permission its name points at.
 
 When the repository's `configdirector.json` has an `organization` and the projects carry another `organizationId`, the token belongs to another organization than the repository's. Tell the user so, and set the server up for the repository's organization as item 2 of the MCP setup says, then try again.
 

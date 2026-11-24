@@ -4,6 +4,10 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 
 ## [Unreleased]
 
+### Changed
+
+- When `list_projects` on the MCP server says the Authorization header is missing, `configdirector-connect` tells you that your agent's configuration sends no API token, and writes it again with the header the MCP docs page shows for your agent. It reads the token's permissions from the tools the server lists only once `list_projects` returns your projects, since the server lists every tool to a client that sends no token.
+
 ## [0.24.0] - 2026-11-22
 
 ### Changed
