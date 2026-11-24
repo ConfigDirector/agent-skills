@@ -7,6 +7,7 @@ All notable changes to the ConfigDirector agent skills are documented here. The 
 ### Changed
 
 - When `list_projects` on the MCP server says the Authorization header is missing, `configdirector-connect` tells you that your agent's configuration sends no API token, and writes it again with the header the MCP docs page shows for your agent. It reads the token's permissions from the tools the server lists only once `list_projects` returns your projects, since the server lists every tool to a client that sends no token.
+- `configdirector-setup`, `configdirector-flag-a-change`, `configdirector-create-config`, `configdirector-roll-out`, `configdirector-segments`, `configdirector-clean-up-flag` and `configdirector-migrate-from-launchdarkly` send you to `configdirector-connect` when `list_projects` says the Authorization header is missing, as they do when no ConfigDirector tool is available, instead of only reporting the message.
 
 ## [0.24.0] - 2026-11-22
 
